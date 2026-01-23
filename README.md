@@ -13,7 +13,7 @@
 |------------|------|-------|------|
 | 20230104058 | Danial Hossain Dani | danialhossaindani@gmail.com | Team Lead |
 | 20230104070 | Toufikul Alam Yame | toufikul.alam30@gmail.com | Backend Developer |
-| — | Md Salahuddin Yousuf | sagor200301714643817@gmail.com | Frontend Developer |
+| 20230104074 | Md Salahuddin Yousuf | sagor200301714643817@gmail.com | Frontend Developer |
 
 ---
 
