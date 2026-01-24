@@ -54,7 +54,7 @@ The objectives of this project are to:
 - MySQL
 
 ### Rendering Method
-- Client-Side Rendering (CSR)
+- Server-Side Rendering (SSR)
 
 ---
 
