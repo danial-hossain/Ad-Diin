@@ -18,6 +18,7 @@ import UserProfilePage from './pages/UserProfilePage';
 import AdminDashboard from './pages/AdminDashboard';
 import DiinAIPage from './pages/DiinAIPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
+import MyDonationsPage from './pages/MyDonationsPage';  // 👈 নতুন ইম্পোর্ট
 
 export default function App() {
   return (
@@ -38,6 +39,9 @@ export default function App() {
             <Route path="/milad" element={<MiladBookingPage />} />
             <Route path="/my-milad-requests" element={<MyMiladRequestsPage />} />
             <Route path="/diin-ai" element={<DiinAIPage />} />
+
+            {/* ✅ My Donations Page - NEW */}
+            <Route path="/my-donations" element={<MyDonationsPage />} />
 
             {/* ✅ Donate Payment Callback Routes */}
             <Route path="/donate/success" element={<DonateSuccess />} />
