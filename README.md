@@ -13,7 +13,7 @@
 |------------|------|-------|------|
 | 20230104058 | Danial Hossain Dani | danialhossaindani@gmail.com | Team Lead |
 | 20230104070 | Toufikul Alam Yame | toufikul.alam30@gmail.com | Backend Developer |
-| — | Md Salahuddin Yousuf | sagor200301714643817@gmail.com | Frontend Developer |
+| 20230104074| Md Salahuddin Yousuf | sagor200301714643817@gmail.com | Frontend Developer |
 
 ---
 
@@ -48,7 +48,7 @@ The objectives of this project are to:
 - Laravel
 
 ### Frontend
-- Blade (Laravel Blade Template Engine)
+- React
 
 ### Database
 - MySQL
@@ -122,30 +122,64 @@ https://funny-ice-09041228.figma.site/?fbclid=IwZXh0bgNhZW0CMTAAYnJpZBExMzVTR2dF
 
 ---
 
-## 🧩 Milestones
+🧩 Milestones Progress
 
-### Milestone 1: Foundation & Core Setup
-- Project setup
-- Authentication system
-- Navbar & page routing
-- Frontend and backend integration
 
----
+✅ Milestone 1: Foundation & Core Setup (Completed)
 
-### Milestone 2: Core Features Development
-- Donation feature
-- Zakat feature
-- Event, Milad & activity management
-- User profile
-- Diin AI API integration
+Frontend project structure setup
 
----
+Authentication system with JWT
 
-### Milestone 3: Finalization & Admin Panel
-- Admin panel development
-- Admin panel functionality integration
-- Final testing and bug fixing
-- Documentation completion
+User registration and login
+
+User profile page
+
+Milad booking system
+
+Events 
+
+Prayer times integration with database
+
+Database schema design
+
+API integration foundation
+
+
+🏗 Milestone 2: Core Features Development (In Progress)
+
+Donation page with SSLCommerz integration
+
+Diin AI integration and API
+
+Zakat calculator with formulas
+
+Admin panel UI design
+
+Activities page development
+
+Contact page with form
+
+Admin panel backend integration
+
+Testing and bug fixes
+
+
+⏳ Milestone 3: Finalization & Admin Panel (Upcoming)
+
+Complete admin CRUD operations
+
+Dashboard analytics implementation
+
+Performance optimization
+
+
+Final testing (Unit/Integration/E2E)
+
+Documentation completion
+
+Deployment to production
+
 
 ---
 
