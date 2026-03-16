@@ -190,48 +190,62 @@ INSERT INTO islamic_events (event_name, event_date, hijri_date, hijri_month, hij
 ('12 Rabi ul Awal 2026', '2026-08-25', '12 Rabi ul Awal 1448h', 'Rabi ul Awal', 12, 'festival', 'Birthday of Prophet Muhammad (PBUH)', 10);
 
 
+-- ============================================
+-- Table 6: donations (for payment records)
+-- ============================================
+CREATE TABLE IF NOT EXISTS donations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    name VARCHAR(255) NULL,
+    email VARCHAR(255) NULL,
+    phone VARCHAR(20) NULL,
+    category VARCHAR(50) NOT NULL,        -- 'zakat', 'iftar', 'durjog', 'sitarto', 'gachropon', 'kurbani', 'orphan', 'general'
+    amount DECIMAL(10,2) NOT NULL,
+    currency VARCHAR(10) DEFAULT 'BDT',
+    tran_id VARCHAR(100) NOT NULL UNIQUE,
+    val_id VARCHAR(100) NULL,
+    bank_tran_id VARCHAR(100) NULL,
+    payment_status VARCHAR(50) DEFAULT 'pending',  -- 'pending', 'completed', 'failed', 'cancelled'
+    payment_method VARCHAR(50) NULL,                -- 'bkash', 'nagad', 'rocket', 'bank', 'sslcommerz'
+    ssl_response TEXT NULL,
+    notes TEXT NULL,
+    is_anonymous BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Foreign key to users table
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    
+    -- Indexes for performance
+    INDEX idx_donations_tran_id (tran_id),
+    INDEX idx_donations_user_id (user_id),
+    INDEX idx_donations_category (category),
+    INDEX idx_donations_payment_status (payment_status),
+    INDEX idx_donations_created_at (created_at)
+);
 
 
-
-
-
-
+-- Show sample data (after inserts)
+SELECT * FROM donations ;
 -- Show all tables
 SHOW TABLES;
-
--- Describe milads table
-DESCRIBE milads;
-
-
-
-
--- Show all tables
-SHOW TABLES;
-
--- Show structure of verifications table
-DESCRIBE verifications;
-
--- Show updated users table
-DESCRIBE users;
-
-
-
-
 -- Show all data
 SELECT * FROM users;
+
+UPDATE users
+SET role = 'admin'
+WHERE email = 'danialhossain2024@gmail.com';
+
+
 SELECT * FROM verifications;
 SELECT * FROM password_reset_tokens;
 SELECT * from milads;
 delete from users where id =3;
-
 delete from verifications where id =5;
-
-
-
-
-SHOW TABLES;
-
 -- MySQL Workbench এ run করুন
 USE addiin;
+
+
+
 
 
