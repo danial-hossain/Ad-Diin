@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, Users, TrendingUp, DollarSign } from 'lucide-react';
+import { Heart, DollarSign } from 'lucide-react';
 
 export default function ZakatCalculatorPage() {
   // ----------- input states -----------
