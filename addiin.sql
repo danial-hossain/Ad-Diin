@@ -231,6 +231,12 @@ SELECT * FROM donations ;
 SHOW TABLES;
 -- Show all data
 SELECT * FROM users;
+
+UPDATE users
+SET role = 'admin'
+WHERE email = 'danialhossain2024@gmail.com';
+
+
 SELECT * FROM verifications;
 SELECT * FROM password_reset_tokens;
 SELECT * from milads;
@@ -238,7 +244,6 @@ delete from users where id =3;
 delete from verifications where id =5;
 -- MySQL Workbench এ run করুন
 USE addiin;
-
 
 
 
