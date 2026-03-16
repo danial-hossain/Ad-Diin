@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Heart, Coffee, Users, TreePine, 
   Beef, Home, Droplets, Gift, 
@@ -19,6 +19,8 @@ interface DonationCategory {
 
 export default function DonatePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [amount, setAmount] = useState<number>(100);
   const [customAmount, setCustomAmount] = useState<string>('');
@@ -38,6 +40,17 @@ export default function DonatePage() {
     { id: 'orphan',    title: 'Orphan Care',       titleBn: 'এতিম',           descriptionBn: 'এতিম শিশুদের সহায়তা করুন',                       icon: <Users className="w-8 h-8" />,    color: 'text-purple-600',  bgColor: 'bg-purple-50',  minAmount: 100 },
     { id: 'general',   title: 'General Donation',  titleBn: 'সাধারণ অনুদান',  descriptionBn: 'আমাদের সাধারণ কল্যাণমূলক কাজে সহায়তা করুন',    icon: <Gift className="w-8 h-8" />,     color: 'text-gray-600',    bgColor: 'bg-gray-50',    minAmount: 50  },
   ];
+
+  // ✅ Home page থেকে আসলে auto-select + payment form দেখাও
+  useEffect(() => {
+    const state = location.state as { selectedCategory?: string; showPayment?: boolean } | null;
+    if (state?.selectedCategory) {
+      const cat = categories.find(c => c.id === state.selectedCategory);
+      setSelectedCategory(state.selectedCategory);
+      if (cat?.minAmount) setAmount(cat.minAmount);
+      if (state.showPayment) setShowPayment(true);
+    }
+  }, [location.state]);
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
@@ -68,7 +81,7 @@ export default function DonatePage() {
         },
         body: JSON.stringify({
           category: selectedCategory,
-          amount: amount,
+          amount,
           name: userName,
           email: userEmail,
           phone: userPhone,
@@ -92,7 +105,7 @@ export default function DonatePage() {
   };
 
   const presetAmounts = [100, 200, 500, 1000, 5000];
-  const selectedCat  = categories.find(c => c.id === selectedCategory);
+  const selectedCat = categories.find(c => c.id === selectedCategory);
 
   const checkAuth = () => {
     const token = localStorage.getItem('token');
@@ -181,7 +194,6 @@ export default function DonatePage() {
               <p className="text-xs text-gray-500 mt-1">ন্যূনতম: ৳{selectedCat.minAmount}</p>
             </div>
 
-            {/* SSLCommerz Info */}
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800 text-center">
                 🔒 পেমেন্ট সম্পন্ন হবে SSLCommerz-এর নিরাপদ গেটওয়ের মাধ্যমে
