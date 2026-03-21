@@ -5,7 +5,7 @@ import {
   Settings, LogOut, Search, Menu, X,
   UserCheck, UserX, MessageSquare,
   CheckCircle, XCircle, Loader2, BookOpen,
-  Moon, Sun, Trash2, Edit, Save
+  Moon, Sun, Trash2, Edit, Save, TrendingUp
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_BACKEND_ENDPOINT || 'http://localhost:8000';
@@ -26,12 +26,11 @@ function toArray(data: any): any[] {
   return [];
 }
 
-// যেকোনো time format কে "HH:MM" (24-hour) এ convert করে
 function toInputTime(timeStr: string): string {
   if (!timeStr) return '';
   if (timeStr.includes('AM') || timeStr.includes('PM')) {
-    const parts    = timeStr.trim().split(' ');
-    const meridiem = parts[1];
+    const parts     = timeStr.trim().split(' ');
+    const meridiem  = parts[1];
     const timeParts = parts[0].split(':');
     let h = parseInt(timeParts[0], 10);
     const m = parseInt(timeParts[1] || '0', 10);
@@ -43,40 +42,60 @@ function toInputTime(timeStr: string): string {
   return timeStr;
 }
 
+const categoryNames: Record<string, string> = {
+  zakat: 'যাকাত', iftar: 'ইফতার', durjog: 'দুর্গত',
+  sitarto: 'শীতার্ত', gachropon: 'গাছরোপণ',
+  kurbani: 'কুরবানি', orphan: 'এতিম', general: 'সাধারণ'
+};
+
+const categoryColors: Record<string, string> = {
+  zakat:     'bg-emerald-500', iftar:     'bg-orange-500',
+  durjog:    'bg-red-500',     sitarto:   'bg-blue-500',
+  gachropon: 'bg-green-500',   kurbani:   'bg-amber-500',
+  orphan:    'bg-purple-500',  general:   'bg-gray-500',
+};
+
 export default function AdminPanel() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab]         = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen]     = useState(true);
-  const [darkMode, setDarkMode]           = useState(false);
-  const [searchQuery, setSearchQuery]     = useState('');
-  const [loading, setLoading]             = useState(false);
+  const [activeTab, setActiveTab]     = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [darkMode, setDarkMode]       = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading]         = useState(false);
 
-  // ── User delete confirm ──────────────────────────────────────────────────
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // ── Prayer edit modal ────────────────────────────────────────────────────
   const [editingPrayer, setEditingPrayer]   = useState<any | null>(null);
   const [editPrayerTime, setEditPrayerTime] = useState('');
   const [editSaving, setEditSaving]         = useState(false);
   const [editError, setEditError]           = useState('');
 
-  // ── Event CRUD state ─────────────────────────────────────────────────────
-  const [eventModal, setEventModal]             = useState<'create' | 'edit' | null>(null);
-  const [editingEvent, setEditingEvent]         = useState<any | null>(null);
-  const [eventForm, setEventForm]               = useState({
+  const [eventModal, setEventModal]                 = useState<'create' | 'edit' | null>(null);
+  const [editingEvent, setEditingEvent]             = useState<any | null>(null);
+  const [eventForm, setEventForm]                   = useState({
     event_name: '', event_date: '', hijri_date: '', hijri_month: '',
     hijri_day: '', event_type: 'religious', description: '', is_active: true, display_order: ''
   });
-  const [eventSaving, setEventSaving]           = useState(false);
-  const [eventError, setEventError]             = useState('');
+  const [eventSaving, setEventSaving]               = useState(false);
+  const [eventError, setEventError]                 = useState('');
   const [deleteEventConfirm, setDeleteEventConfirm] = useState<string | null>(null);
 
-  // ── Data state ───────────────────────────────────────────────────────────
+  // ✅ Donation filter state
+  const [donationFilter, setDonationFilter] = useState('all');
+
   const [users, setUsers]                 = useState<any[]>([]);
   const [donations, setDonations]         = useState<any[]>([]);
   const [prayerTimes, setPrayerTimes]     = useState<any[]>([]);
   const [events, setEvents]               = useState<any[]>([]);
   const [miladRequests, setMiladRequests] = useState<any[]>([]);
+
+  // ✅ Donation stats
+  const [donationStats, setDonationStats] = useState<{
+    total_completed_amount: number;
+    total_count: number;
+    pending_count: number;
+    by_category: Record<string, { total_amount: number; count: number }>;
+  } | null>(null);
 
   const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -92,15 +111,16 @@ export default function AdminPanel() {
     try {
       if (tab === 'dashboard') {
         const [u, m, e, d] = await Promise.all([
-          fetch(`${API_URL}/api/v1/admin/users`,            { headers: authHeaders() }).then(r => r.json()),
-          fetch(`${API_URL}/api/v1/admin/milads`,           { headers: authHeaders() }).then(r => r.json()),
-          fetch(`${API_URL}/api/v1/events/all`,             { headers: authHeaders() }).then(r => r.json()),
-          fetch(`${API_URL}/api/v1/payment/user/donations`, { headers: authHeaders() }).then(r => r.json()),
+          fetch(`${API_URL}/api/v1/admin/users`,     { headers: authHeaders() }).then(r => r.json()),
+          fetch(`${API_URL}/api/v1/admin/milads`,    { headers: authHeaders() }).then(r => r.json()),
+          fetch(`${API_URL}/api/v1/events/all`,      { headers: authHeaders() }).then(r => r.json()),
+          fetch(`${API_URL}/api/v1/admin/donations`, { headers: authHeaders() }).then(r => r.json()),
         ]);
         setUsers(toArray(u.data));
         setMiladRequests(toArray(m.data));
         setEvents(toArray(e.data));
         setDonations(toArray(d.data));
+        if (d.stats) setDonationStats(d.stats);
       } else if (tab === 'users') {
         const r = await fetch(`${API_URL}/api/v1/admin/users`, { headers: authHeaders() });
         const d = await r.json();
@@ -116,8 +136,6 @@ export default function AdminPanel() {
           setPrayerTimes(flat.sort((a, b) => a.display_order - b.display_order));
         }
       } else if (tab === 'events') {
-        // Admin এ সব event দেখানো হয় (active/inactive উভয়)
-        // তাই /events/all ব্যবহার করছি — প্রয়োজনে admin-only endpoint বানাতে পারেন
         const r = await fetch(`${API_URL}/api/v1/events/all`, { headers: authHeaders() });
         const d = await r.json();
         setEvents(toArray(d.data));
@@ -126,9 +144,10 @@ export default function AdminPanel() {
         const d = await r.json();
         setMiladRequests(toArray(d.data));
       } else if (tab === 'donations') {
-        const r = await fetch(`${API_URL}/api/v1/payment/user/donations`, { headers: authHeaders() });
+        const r = await fetch(`${API_URL}/api/v1/admin/donations`, { headers: authHeaders() });
         const d = await r.json();
         setDonations(toArray(d.data));
+        if (d.stats) setDonationStats(d.stats);
       }
     } catch (err) {
       console.error('Fetch error:', err);
@@ -137,7 +156,6 @@ export default function AdminPanel() {
     }
   };
 
-  // ── Logout ───────────────────────────────────────────────────────────────
   const handleLogout = async () => {
     try {
       await fetch(`${API_URL}/api/v1/auth/logout`, { method: 'POST', headers: authHeaders() });
@@ -148,7 +166,6 @@ export default function AdminPanel() {
     }
   };
 
-  // ── User actions ─────────────────────────────────────────────────────────
   const handleToggleUser = async (userId: string, isActive: boolean) => {
     try {
       const r = await fetch(`${API_URL}/api/v1/admin/users/${userId}`, {
@@ -169,7 +186,6 @@ export default function AdminPanel() {
     } catch { alert('Network error'); }
   };
 
-  // ── Milad actions ────────────────────────────────────────────────────────
   const handleMiladStatus = async (id: string, status: string) => {
     try {
       const r = await fetch(`${API_URL}/api/v1/admin/milads/${id}/status`, {
@@ -181,11 +197,9 @@ export default function AdminPanel() {
     } catch (err) { console.error(err); }
   };
 
-  // ── Prayer actions ───────────────────────────────────────────────────────
   const handleOpenEditPrayer = (prayer: any) => {
     setEditingPrayer(prayer);
-    const rawTime = prayer.prayer_time || prayer.time || '';
-    setEditPrayerTime(toInputTime(rawTime));
+    setEditPrayerTime(toInputTime(prayer.prayer_time || prayer.time || ''));
     setEditError('');
   };
 
@@ -195,18 +209,14 @@ export default function AdminPanel() {
     setEditSaving(true);
     setEditError('');
     try {
-      const timeToSend = editPrayerTime + ':00';
       const r = await fetch(`${API_URL}/api/v1/admin/prayer-times/${editingPrayer.id}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify({ prayer_time: timeToSend })
+        method: 'PUT', headers: authHeaders(),
+        body: JSON.stringify({ prayer_time: editPrayerTime + ':00' })
       });
       const d = await r.json();
       if (d.success) {
         setPrayerTimes(prev => prev.map(p =>
-          p.id === editingPrayer.id
-            ? { ...p, prayer_time: timeToSend, time: d.data?.time || timeToSend }
-            : p
+          p.id === editingPrayer.id ? { ...p, prayer_time: editPrayerTime + ':00', time: d.data?.time || editPrayerTime } : p
         ));
         setEditingPrayer(null);
       } else {
@@ -216,12 +226,8 @@ export default function AdminPanel() {
     finally { setEditSaving(false); }
   };
 
-  // ── Event actions ────────────────────────────────────────────────────────
   const openCreateEvent = () => {
-    setEventForm({
-      event_name: '', event_date: '', hijri_date: '', hijri_month: '',
-      hijri_day: '', event_type: 'religious', description: '', is_active: true, display_order: ''
-    });
+    setEventForm({ event_name: '', event_date: '', hijri_date: '', hijri_month: '', hijri_day: '', event_type: 'religious', description: '', is_active: true, display_order: '' });
     setEventError('');
     setEventModal('create');
   };
@@ -229,13 +235,13 @@ export default function AdminPanel() {
   const openEditEvent = (event: any) => {
     setEditingEvent(event);
     setEventForm({
-      event_name:    event.event_name    || '',
-      event_date:    event.event_date    ? String(event.event_date).slice(0, 10) : '',
-      hijri_date:    event.hijri_date    || '',
-      hijri_month:   event.hijri_month   || '',
-      hijri_day:     event.hijri_day     ? String(event.hijri_day) : '',
-      event_type:    event.event_type    || 'religious',
-      description:   event.description  || '',
+      event_name:    event.event_name   || '',
+      event_date:    event.event_date   ? String(event.event_date).slice(0, 10) : '',
+      hijri_date:    event.hijri_date   || '',
+      hijri_month:   event.hijri_month  || '',
+      hijri_day:     event.hijri_day    ? String(event.hijri_day) : '',
+      event_type:    event.event_type   || 'religious',
+      description:   event.description || '',
       is_active:     !!event.is_active,
       display_order: event.display_order ? String(event.display_order) : '',
     });
@@ -252,37 +258,17 @@ export default function AdminPanel() {
     setEventError('');
     try {
       const isEdit = eventModal === 'edit';
-      // ✅ Routes অনুযায়ী: POST /api/v1/admin/events, PUT /api/v1/admin/events/{id}
-      const url = isEdit
-        ? `${API_URL}/api/v1/admin/events/${editingEvent.id}`
-        : `${API_URL}/api/v1/admin/events`;
-
-      const payload = {
-        ...eventForm,
-        hijri_day:     eventForm.hijri_day     ? parseInt(eventForm.hijri_day)     : null,
-        display_order: eventForm.display_order ? parseInt(eventForm.display_order) : null,
-      };
-
-      const r = await fetch(url, {
-        method:  isEdit ? 'PUT' : 'POST',
-        headers: authHeaders(),
-        body:    JSON.stringify(payload),
-      });
+      const url    = isEdit ? `${API_URL}/api/v1/admin/events/${editingEvent.id}` : `${API_URL}/api/v1/admin/events`;
+      const payload = { ...eventForm, hijri_day: eventForm.hijri_day ? parseInt(eventForm.hijri_day) : null, display_order: eventForm.display_order ? parseInt(eventForm.display_order) : null };
+      const r = await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: authHeaders(), body: JSON.stringify(payload) });
       const d = await r.json();
       if (d.success) {
-        if (isEdit) {
-          setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, ...d.data } : e));
-        } else {
-          setEvents(prev => [...prev, d.data]);
-        }
+        if (isEdit) setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, ...d.data } : e));
+        else setEvents(prev => [...prev, d.data]);
         setEventModal(null);
       } else {
-        if (d.errors) {
-          const firstError = Object.values(d.errors)[0];
-          setEventError(Array.isArray(firstError) ? firstError[0] as string : String(firstError));
-        } else {
-          setEventError(d.message || 'সংরক্ষণ ব্যর্থ হয়েছে');
-        }
+        if (d.errors) { const fe = Object.values(d.errors)[0]; setEventError(Array.isArray(fe) ? fe[0] as string : String(fe)); }
+        else setEventError(d.message || 'সংরক্ষণ ব্যর্থ হয়েছে');
       }
     } catch { setEventError('Network error'); }
     finally { setEventSaving(false); }
@@ -290,7 +276,6 @@ export default function AdminPanel() {
 
   const handleDeleteEvent = async (id: string) => {
     try {
-      // ✅ Routes অনুযায়ী: DELETE /api/v1/admin/events/{id}
       const r = await fetch(`${API_URL}/api/v1/admin/events/${id}`, { method: 'DELETE', headers: authHeaders() });
       const d = await r.json();
       if (d.success) { setEvents(prev => prev.filter(e => e.id != id)); setDeleteEventConfirm(null); }
@@ -298,7 +283,6 @@ export default function AdminPanel() {
     } catch { alert('Network error'); }
   };
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': case 'active': case 'approved': return 'bg-green-100 text-green-800';
@@ -310,35 +294,48 @@ export default function AdminPanel() {
     }
   };
 
-  const categoryNames: Record<string, string> = {
-    zakat: 'যাকাত', iftar: 'ইফতার', durjog: 'দুর্গত',
-    sitarto: 'শীতার্ত', gachropon: 'গাছরোপণ',
-    kurbani: 'কুরবানি', orphan: 'এতিম', general: 'সাধারণ'
-  };
+  // ✅ Filtered donations
+  const filteredDonations = donations.filter(d => {
+    if (donationFilter === 'all') return true;
+    return d.payment_status === donationFilter || d.category === donationFilter;
+  });
 
-  const bg   = darkMode ? 'bg-gray-900' : 'bg-gray-50';
-  const card = darkMode ? 'bg-gray-800' : 'bg-white';
-  const text = darkMode ? 'text-white'  : 'text-gray-900';
-  const sub  = darkMode ? 'text-gray-400' : 'text-gray-500';
-  const bdr  = darkMode ? 'border-gray-700' : 'border-gray-200';
+  const bg       = darkMode ? 'bg-gray-900' : 'bg-gray-50';
+  const card     = darkMode ? 'bg-gray-800' : 'bg-white';
+  const text     = darkMode ? 'text-white'  : 'text-gray-900';
+  const sub      = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const bdr      = darkMode ? 'border-gray-700' : 'border-gray-200';
   const inputCls = `w-full border ${bdr} rounded-lg px-3 py-2 text-sm ${text} ${darkMode ? 'bg-gray-700' : 'bg-white'} focus:outline-none focus:ring-2 focus:ring-emerald-500`;
 
   const pendingMilad = miladRequests.filter(m => m.status === 'pending').length;
 
   const sidebarItems = [
-    { id: 'dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
-    { id: 'users',          label: 'Users',           icon: Users           },
-    { id: 'prayer-times',   label: 'Prayer Time',     icon: BookOpen        },
-    { id: 'events',         label: 'Events',          icon: Calendar        },
-    { id: 'milad-requests', label: 'Milad Requests',  icon: MessageSquare   },
-    { id: 'donations',      label: 'Donations',       icon: HandHeart       },
-    { id: 'settings',       label: 'Settings',        icon: Settings        },
+    { id: 'dashboard',      label: 'Dashboard',     icon: LayoutDashboard },
+    { id: 'users',          label: 'Users',          icon: Users           },
+    { id: 'prayer-times',   label: 'Prayer Time',    icon: BookOpen        },
+    { id: 'events',         label: 'Events',         icon: Calendar        },
+    { id: 'milad-requests', label: 'Milad Requests', icon: MessageSquare   },
+    { id: 'donations',      label: 'Donations',      icon: HandHeart       },
+    { id: 'settings',       label: 'Settings',       icon: Settings        },
   ];
+
+  // ✅ Category stats for bar chart
+  const categoryStatsArray = donationStats?.by_category
+    ? Object.entries(donationStats.by_category).map(([cat, val]) => ({
+        category: cat,
+        name: categoryNames[cat] || cat,
+        amount: Number(val.total_amount),
+        count: Number(val.count),
+        color: categoryColors[cat] || 'bg-gray-400',
+      })).sort((a, b) => b.amount - a.amount)
+    : [];
+
+  const maxAmount = Math.max(...categoryStatsArray.map(c => c.amount), 1);
 
   return (
     <div className={`min-h-screen ${bg} flex`}>
 
-      {/* ── User Delete Confirm Modal ──────────────────────────────────────── */}
+      {/* User Delete Confirm */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className={`${card} rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl`}>
@@ -352,7 +349,7 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* ── Event Delete Confirm Modal ─────────────────────────────────────── */}
+      {/* Event Delete Confirm */}
       {deleteEventConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className={`${card} rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl`}>
@@ -366,39 +363,27 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* ── Event Create / Edit Modal ──────────────────────────────────────── */}
+      {/* Event Modal */}
       {eventModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className={`${card} rounded-xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto`}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className={`text-lg font-bold ${text}`}>
-                {eventModal === 'create' ? 'নতুন ইভেন্ট যোগ করুন' : 'ইভেন্ট সম্পাদনা করুন'}
-              </h3>
+              <h3 className={`text-lg font-bold ${text}`}>{eventModal === 'create' ? 'নতুন ইভেন্ট যোগ করুন' : 'ইভেন্ট সম্পাদনা করুন'}</h3>
               <button onClick={() => setEventModal(null)} className={sub}><X className="w-5 h-5" /></button>
             </div>
-
             <div className="space-y-4">
-              {/* event_name */}
               <div>
                 <label className={`block text-xs font-medium mb-1 ${sub}`}>ইভেন্টের নাম *</label>
-                <input type="text" value={eventForm.event_name}
-                  onChange={e => setEventForm(f => ({ ...f, event_name: e.target.value }))}
-                  placeholder="যেমন: ঈদুল ফিতর" className={inputCls} />
+                <input type="text" value={eventForm.event_name} onChange={e => setEventForm(f => ({ ...f, event_name: e.target.value }))} placeholder="যেমন: ঈদুল ফিতর" className={inputCls} />
               </div>
-
-              {/* event_date + event_type */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${sub}`}>তারিখ (ইংরেজি) *</label>
-                  <input type="date" value={eventForm.event_date}
-                    onChange={e => setEventForm(f => ({ ...f, event_date: e.target.value }))}
-                    className={inputCls} />
+                  <input type="date" value={eventForm.event_date} onChange={e => setEventForm(f => ({ ...f, event_date: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${sub}`}>ধরন *</label>
-                  <select value={eventForm.event_type}
-                    onChange={e => setEventForm(f => ({ ...f, event_type: e.target.value }))}
-                    className={inputCls}>
+                  <select value={eventForm.event_type} onChange={e => setEventForm(f => ({ ...f, event_type: e.target.value }))} className={inputCls}>
                     <option value="religious">Religious (ধর্মীয়)</option>
                     <option value="festival">Festival (উৎসব)</option>
                     <option value="special">Special (বিশেষ)</option>
@@ -406,64 +391,39 @@ export default function AdminPanel() {
                   </select>
                 </div>
               </div>
-
-              {/* hijri_date + hijri_month */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${sub}`}>হিজরি তারিখ</label>
-                  <input type="text" value={eventForm.hijri_date}
-                    onChange={e => setEventForm(f => ({ ...f, hijri_date: e.target.value }))}
-                    placeholder="যেমন: ১ শাওয়াল ১৪৪৬" className={inputCls} />
+                  <input type="text" value={eventForm.hijri_date} onChange={e => setEventForm(f => ({ ...f, hijri_date: e.target.value }))} placeholder="যেমন: ১ শাওয়াল ১৪৪৬" className={inputCls} />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${sub}`}>হিজরি মাস</label>
-                  <input type="text" value={eventForm.hijri_month}
-                    onChange={e => setEventForm(f => ({ ...f, hijri_month: e.target.value }))}
-                    placeholder="যেমন: শাওয়াল" className={inputCls} />
+                  <input type="text" value={eventForm.hijri_month} onChange={e => setEventForm(f => ({ ...f, hijri_month: e.target.value }))} placeholder="যেমন: শাওয়াল" className={inputCls} />
                 </div>
               </div>
-
-              {/* hijri_day + display_order */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${sub}`}>হিজরি দিন</label>
-                  <input type="number" value={eventForm.hijri_day} min="1" max="30"
-                    onChange={e => setEventForm(f => ({ ...f, hijri_day: e.target.value }))}
-                    placeholder="যেমন: ১" className={inputCls} />
+                  <input type="number" value={eventForm.hijri_day} min="1" max="30" onChange={e => setEventForm(f => ({ ...f, hijri_day: e.target.value }))} placeholder="১" className={inputCls} />
                 </div>
                 <div>
                   <label className={`block text-xs font-medium mb-1 ${sub}`}>ক্রম (Display Order)</label>
-                  <input type="number" value={eventForm.display_order} min="1"
-                    onChange={e => setEventForm(f => ({ ...f, display_order: e.target.value }))}
-                    placeholder="যেমন: 1" className={inputCls} />
+                  <input type="number" value={eventForm.display_order} min="1" onChange={e => setEventForm(f => ({ ...f, display_order: e.target.value }))} placeholder="1" className={inputCls} />
                 </div>
               </div>
-
-              {/* description */}
               <div>
                 <label className={`block text-xs font-medium mb-1 ${sub}`}>বিবরণ</label>
-                <textarea value={eventForm.description} rows={3}
-                  onChange={e => setEventForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="ইভেন্টের বিবরণ লিখুন..."
-                  className={`${inputCls} resize-none`} />
+                <textarea value={eventForm.description} rows={3} onChange={e => setEventForm(f => ({ ...f, description: e.target.value }))} placeholder="ইভেন্টের বিবরণ লিখুন..." className={`${inputCls} resize-none`} />
               </div>
-
-              {/* is_active */}
               <div className="flex items-center gap-3">
-                <input type="checkbox" id="event-active" checked={eventForm.is_active}
-                  onChange={e => setEventForm(f => ({ ...f, is_active: e.target.checked }))}
-                  className="w-4 h-4 accent-emerald-600" />
+                <input type="checkbox" id="event-active" checked={eventForm.is_active} onChange={e => setEventForm(f => ({ ...f, is_active: e.target.checked }))} className="w-4 h-4 accent-emerald-600" />
                 <label htmlFor="event-active" className={`text-sm ${text}`}>সক্রিয় রাখুন</label>
               </div>
             </div>
-
             {eventError && <p className="text-red-500 text-sm mt-3">{eventError}</p>}
-
             <div className="flex gap-3 justify-end mt-5">
-              <button onClick={() => setEventModal(null)}
-                className={`px-4 py-2 border ${bdr} rounded-lg text-sm ${text}`}>বাতিল</button>
-              <button onClick={handleSaveEvent} disabled={eventSaving}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 flex items-center gap-2 disabled:opacity-50">
+              <button onClick={() => setEventModal(null)} className={`px-4 py-2 border ${bdr} rounded-lg text-sm ${text}`}>বাতিল</button>
+              <button onClick={handleSaveEvent} disabled={eventSaving} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 flex items-center gap-2 disabled:opacity-50">
                 {eventSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {eventModal === 'create' ? 'যোগ করুন' : 'আপডেট করুন'}
               </button>
@@ -472,7 +432,7 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* ── Prayer Edit Modal ──────────────────────────────────────────────── */}
+      {/* Prayer Edit Modal */}
       {editingPrayer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className={`${card} rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl`}>
@@ -480,25 +440,16 @@ export default function AdminPanel() {
               <h3 className={`text-lg font-bold ${text}`}>সময় পরিবর্তন করুন</h3>
               <button onClick={() => setEditingPrayer(null)} className={sub}><X className="w-5 h-5" /></button>
             </div>
-            <p className={`text-sm mb-4 ${sub}`}>
-              {editingPrayer.display_name_bn} ({editingPrayer.display_name_en})
-            </p>
+            <p className={`text-sm mb-4 ${sub}`}>{editingPrayer.display_name_bn} ({editingPrayer.display_name_en})</p>
             <div className="mb-4">
               <label className={`block text-sm font-medium mb-2 ${sub}`}>নতুন সময়</label>
-              <input
-                type="time"
-                value={editPrayerTime}
-                onChange={(e) => setEditPrayerTime(e.target.value)}
-                className={`w-full border ${bdr} rounded-lg px-3 py-2 text-lg ${text} ${darkMode ? 'bg-gray-700' : 'bg-white'} focus:outline-none focus:ring-2 focus:ring-emerald-500`}
-              />
+              <input type="time" value={editPrayerTime} onChange={e => setEditPrayerTime(e.target.value)} className={`w-full border ${bdr} rounded-lg px-3 py-2 text-lg ${text} ${darkMode ? 'bg-gray-700' : 'bg-white'} focus:outline-none focus:ring-2 focus:ring-emerald-500`} />
               <p className={`text-xs mt-1 ${sub}`}>বর্তমান সময়: {editingPrayer.time || editingPrayer.prayer_time}</p>
             </div>
             {editError && <p className="text-red-500 text-sm mb-3">{editError}</p>}
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setEditingPrayer(null)}
-                className={`px-4 py-2 border ${bdr} rounded-lg text-sm ${text}`}>বাতিল</button>
-              <button onClick={handleSavePrayer} disabled={editSaving}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 flex items-center gap-2 disabled:opacity-50">
+              <button onClick={() => setEditingPrayer(null)} className={`px-4 py-2 border ${bdr} rounded-lg text-sm ${text}`}>বাতিল</button>
+              <button onClick={handleSavePrayer} disabled={editSaving} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 flex items-center gap-2 disabled:opacity-50">
                 {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 সংরক্ষণ করুন
               </button>
@@ -507,23 +458,19 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* ── Sidebar ───────────────────────────────────────────────────────── */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 flex flex-col shadow-xl transition-transform duration-300
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${card}`}>
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 flex flex-col shadow-xl transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${card}`}>
         <div className={`flex items-center justify-between p-4 border-b ${bdr}`}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
-            </div>
+            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center"><span className="text-white font-bold text-sm">A</span></div>
             <span className={`font-bold text-lg ${text}`}>Admin Panel</span>
           </div>
           <button onClick={() => setSidebarOpen(false)} className={`lg:hidden ${sub}`}><X className="w-5 h-5" /></button>
         </div>
         <nav className="flex-1 p-4 overflow-y-auto">
-          {sidebarItems.map((item) => (
+          {sidebarItems.map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition text-left
-                ${activeTab === item.id ? 'bg-emerald-50 text-emerald-700 font-semibold' : `${sub} hover:bg-gray-100`}`}>
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition text-left ${activeTab === item.id ? 'bg-emerald-50 text-emerald-700 font-semibold' : `${sub} hover:bg-gray-100`}`}>
               <item.icon className="w-5 h-5 flex-shrink-0" />
               <span className="flex-1">{item.label}</span>
               {item.id === 'milad-requests' && pendingMilad > 0 && (
@@ -539,7 +486,7 @@ export default function AdminPanel() {
         </div>
       </aside>
 
-      {/* ── Main ──────────────────────────────────────────────────────────── */}
+      {/* Main */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : ''}`}>
         <header className={`sticky top-0 z-30 ${card} shadow-sm`}>
           <div className="flex items-center justify-between px-4 py-3">
@@ -549,9 +496,7 @@ export default function AdminPanel() {
               </button>
               <div className={`hidden md:flex items-center rounded-lg px-3 py-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                 <Search className="w-4 h-4 text-gray-400" />
-                <input type="text" placeholder="Search..." value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`bg-transparent border-none focus:outline-none ml-2 text-sm w-48 ${text}`} />
+                <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className={`bg-transparent border-none focus:outline-none ml-2 text-sm w-48 ${text}`} />
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -578,16 +523,17 @@ export default function AdminPanel() {
             </div>
           ) : (
             <>
-              {/* ── DASHBOARD ─────────────────────────────────────────────── */}
+              {/* ── DASHBOARD ── */}
               {activeTab === 'dashboard' && (
                 <div className="space-y-6">
+                  {/* Top stats */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                       { label: 'মোট ব্যবহারকারী', value: users.length,     icon: Users,         color: 'bg-blue-100 text-blue-600'       },
                       { label: 'মোট ইভেন্ট',       value: events.length,    icon: Calendar,      color: 'bg-purple-100 text-purple-600'   },
                       { label: 'Pending মিলাদ',     value: pendingMilad,     icon: MessageSquare, color: 'bg-yellow-100 text-yellow-600'   },
-                      { label: 'মোট দান',           value: donations.length, icon: HandHeart,     color: 'bg-emerald-100 text-emerald-600' },
-                    ].map((s) => (
+                      { label: 'মোট দান (সংখ্যা)',  value: donationStats?.total_count ?? donations.length, icon: HandHeart, color: 'bg-emerald-100 text-emerald-600' },
+                    ].map(s => (
                       <div key={s.label} className={`${card} rounded-xl p-5 shadow-sm`}>
                         <div className={`inline-flex p-2 rounded-lg mb-3 ${s.color}`}><s.icon className="w-5 h-5" /></div>
                         <p className={`text-2xl font-bold ${text}`}>{s.value}</p>
@@ -596,7 +542,60 @@ export default function AdminPanel() {
                     ))}
                   </div>
 
-                  {/* সাম্প্রতিক দান */}
+                  {/* ✅ Total completed amount */}
+                  {donationStats && (
+                    <div className={`${card} rounded-xl shadow-sm p-6`}>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="p-2 bg-emerald-100 rounded-lg"><TrendingUp className="w-5 h-5 text-emerald-600" /></div>
+                        <div>
+                          <h3 className={`font-semibold ${text}`}>দানের সারসংক্ষেপ</h3>
+                          <p className={`text-xs ${sub}`}>শুধুমাত্র সম্পন্ন (completed) দানের হিসাব</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="bg-emerald-50 rounded-xl p-4 text-center">
+                          <p className="text-3xl font-bold text-emerald-700">৳{donationStats.total_completed_amount.toLocaleString('en-BD')}</p>
+                          <p className="text-sm text-emerald-600 mt-1">মোট সংগৃহীত</p>
+                        </div>
+                        <div className="bg-green-50 rounded-xl p-4 text-center">
+                          <p className="text-3xl font-bold text-green-700">{donationStats.total_count - donationStats.pending_count}</p>
+                          <p className="text-sm text-green-600 mt-1">সম্পন্ন দান</p>
+                        </div>
+                        <div className="bg-yellow-50 rounded-xl p-4 text-center">
+                          <p className="text-3xl font-bold text-yellow-700">{donationStats.pending_count}</p>
+                          <p className="text-sm text-yellow-600 mt-1">প্রক্রিয়াধীন</p>
+                        </div>
+                      </div>
+
+                      {/* ✅ Category-wise bar chart */}
+                      {categoryStatsArray.length > 0 && (
+                        <div>
+                          <h4 className={`text-sm font-semibold mb-3 ${text}`}>ক্যাটাগরি অনুযায়ী দান</h4>
+                          <div className="space-y-3">
+                            {categoryStatsArray.map(cat => (
+                              <div key={cat.category}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className={`text-sm font-medium ${text}`}>{cat.name}</span>
+                                  <div className="flex items-center gap-3">
+                                    <span className={`text-xs ${sub}`}>{cat.count} টি দান</span>
+                                    <span className="text-sm font-bold text-emerald-600">৳{cat.amount.toLocaleString('en-BD')}</span>
+                                  </div>
+                                </div>
+                                <div className={`w-full h-2 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                  <div
+                                    className={`h-2 rounded-full ${cat.color} transition-all duration-500`}
+                                    style={{ width: `${(cat.amount / maxAmount) * 100}%` }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Recent donations */}
                   <div className={`${card} rounded-xl shadow-sm p-6`}>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className={`font-semibold ${text}`}>সাম্প্রতিক দান</h3>
@@ -606,10 +605,8 @@ export default function AdminPanel() {
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead><tr className={`text-xs ${sub} border-b ${bdr}`}>
-                            <th className="text-left pb-2">নাম</th>
-                            <th className="text-left pb-2">পরিমাণ</th>
-                            <th className="text-left pb-2">ক্যাটাগরি</th>
-                            <th className="text-left pb-2">স্ট্যাটাস</th>
+                            <th className="text-left pb-2">নাম</th><th className="text-left pb-2">পরিমাণ</th>
+                            <th className="text-left pb-2">ক্যাটাগরি</th><th className="text-left pb-2">স্ট্যাটাস</th>
                           </tr></thead>
                           <tbody>
                             {donations.slice(0, 5).map((d: any) => (
@@ -617,9 +614,7 @@ export default function AdminPanel() {
                                 <td className={`py-3 font-medium ${text}`}>{d.name || 'Anonymous'}</td>
                                 <td className="py-3 font-medium text-emerald-600">৳{d.amount}</td>
                                 <td className={`py-3 ${sub}`}>{categoryNames[d.category] || d.category}</td>
-                                <td className="py-3">
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(d.payment_status)}`}>{d.payment_status}</span>
-                                </td>
+                                <td className="py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(d.payment_status)}`}>{d.payment_status}</span></td>
                               </tr>
                             ))}
                           </tbody>
@@ -628,7 +623,7 @@ export default function AdminPanel() {
                     )}
                   </div>
 
-                  {/* Pending মিলাদ */}
+                  {/* Pending milad */}
                   <div className={`${card} rounded-xl shadow-sm p-6`}>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className={`font-semibold ${text}`}>Pending মিলাদ অনুরোধ</h3>
@@ -652,7 +647,7 @@ export default function AdminPanel() {
                     )}
                   </div>
 
-                  {/* আসন্ন ইভেন্ট */}
+                  {/* Upcoming events */}
                   <div className={`${card} rounded-xl shadow-sm p-6`}>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className={`font-semibold ${text}`}>আসন্ন ইভেন্ট</h3>
@@ -679,7 +674,7 @@ export default function AdminPanel() {
                 </div>
               )}
 
-              {/* ── USERS ─────────────────────────────────────────────────── */}
+              {/* ── USERS ── */}
               {activeTab === 'users' && (
                 <div className={`${card} rounded-xl shadow-sm p-6`}>
                   <h3 className={`text-xl font-semibold mb-6 ${text}`}>ব্যবহারকারী ব্যবস্থাপনা</h3>
@@ -700,20 +695,15 @@ export default function AdminPanel() {
                               <td className={`p-3 font-medium ${text}`}>{u.name}</td>
                               <td className={`p-3 ${sub}`}>{u.email}</td>
                               <td className={`p-3 ${sub}`}>{u.phone || '-'}</td>
-                              <td className="p-3">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>{u.role}</span>
-                              </td>
-                              <td className="p-3">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{u.is_active ? 'active' : 'inactive'}</span>
-                              </td>
+                              <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>{u.role}</span></td>
+                              <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${u.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{u.is_active ? 'active' : 'inactive'}</span></td>
                               <td className="p-3">
                                 <div className="flex items-center gap-2">
-                                  <button onClick={() => handleToggleUser(u.id, !!u.is_active)}
-                                    className="p-1 rounded hover:bg-gray-100" title={u.is_active ? 'Deactivate' : 'Activate'}>
+                                  <button onClick={() => handleToggleUser(u.id, !!u.is_active)} className="p-1 rounded hover:bg-gray-100">
                                     {u.is_active ? <UserX className="w-4 h-4 text-orange-500" /> : <UserCheck className="w-4 h-4 text-green-500" />}
                                   </button>
                                   {u.role !== 'admin' && (
-                                    <button onClick={() => setDeleteConfirm(u.id)} className="p-1 rounded hover:bg-red-50" title="Delete">
+                                    <button onClick={() => setDeleteConfirm(u.id)} className="p-1 rounded hover:bg-red-50">
                                       <Trash2 className="w-4 h-4 text-red-500" />
                                     </button>
                                   )}
@@ -728,7 +718,7 @@ export default function AdminPanel() {
                 </div>
               )}
 
-              {/* ── PRAYER TIMES ───────────────────────────────────────────── */}
+              {/* ── PRAYER TIMES ── */}
               {activeTab === 'prayer-times' && (
                 <div className={`${card} rounded-xl shadow-sm p-6`}>
                   <h3 className={`text-xl font-semibold mb-6 ${text}`}>নামাজের সময়সূচি</h3>
@@ -748,14 +738,9 @@ export default function AdminPanel() {
                               <td className="p-3 font-bold text-emerald-600 text-base">{p.time || p.prayer_time}</td>
                               <td className={`p-3 ${sub}`}>{p.prayer_type}</td>
                               <td className={`p-3 ${sub}`}>{p.category}</td>
+                              <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${p.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{p.is_active ? 'active' : 'inactive'}</span></td>
                               <td className="p-3">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${p.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                  {p.is_active ? 'active' : 'inactive'}
-                                </span>
-                              </td>
-                              <td className="p-3">
-                                <button onClick={() => handleOpenEditPrayer(p)}
-                                  className="p-1 rounded hover:bg-emerald-50" title="Edit time">
+                                <button onClick={() => handleOpenEditPrayer(p)} className="p-1 rounded hover:bg-emerald-50">
                                   <Edit className="w-4 h-4 text-emerald-600" />
                                 </button>
                               </td>
@@ -768,13 +753,12 @@ export default function AdminPanel() {
                 </div>
               )}
 
-              {/* ── EVENTS ────────────────────────────────────────────────── */}
+              {/* ── EVENTS ── */}
               {activeTab === 'events' && (
                 <div className={`${card} rounded-xl shadow-sm p-6`}>
                   <div className="flex items-center justify-between mb-6">
                     <h3 className={`text-xl font-semibold ${text}`}>ইসলামিক ইভেন্ট</h3>
-                    <button onClick={openCreateEvent}
-                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition">
+                    <button onClick={openCreateEvent} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition">
                       <span className="text-lg leading-none font-bold">+</span> নতুন ইভেন্ট
                     </button>
                   </div>
@@ -792,27 +776,17 @@ export default function AdminPanel() {
                               <td className={`p-3 font-medium ${text}`}>{e.event_name}</td>
                               <td className={`p-3 ${sub}`}>{e.event_date}</td>
                               <td className={`p-3 ${sub}`}>{e.hijri_date || '-'}</td>
-                              <td className="p-3">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  e.event_type === 'festival'   ? 'bg-green-100 text-green-800' :
-                                  e.event_type === 'special'    ? 'bg-purple-100 text-purple-800' :
-                                  e.event_type === 'historical' ? 'bg-orange-100 text-orange-800' :
-                                  e.event_type === 'religious'  ? 'bg-emerald-100 text-emerald-800' :
-                                  'bg-blue-100 text-blue-800'}`}>{e.event_type}</span>
-                              </td>
-                              <td className="p-3">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${e.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                  {e.is_active ? 'active' : 'inactive'}
-                                </span>
-                              </td>
+                              <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                e.event_type === 'festival'   ? 'bg-green-100 text-green-800' :
+                                e.event_type === 'special'    ? 'bg-purple-100 text-purple-800' :
+                                e.event_type === 'historical' ? 'bg-orange-100 text-orange-800' :
+                                e.event_type === 'religious'  ? 'bg-emerald-100 text-emerald-800' :
+                                'bg-blue-100 text-blue-800'}`}>{e.event_type}</span></td>
+                              <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${e.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{e.is_active ? 'active' : 'inactive'}</span></td>
                               <td className="p-3">
                                 <div className="flex items-center gap-2">
-                                  <button onClick={() => openEditEvent(e)} className="p-1 rounded hover:bg-emerald-50" title="Edit">
-                                    <Edit className="w-4 h-4 text-emerald-600" />
-                                  </button>
-                                  <button onClick={() => setDeleteEventConfirm(e.id)} className="p-1 rounded hover:bg-red-50" title="Delete">
-                                    <Trash2 className="w-4 h-4 text-red-500" />
-                                  </button>
+                                  <button onClick={() => openEditEvent(e)} className="p-1 rounded hover:bg-emerald-50"><Edit className="w-4 h-4 text-emerald-600" /></button>
+                                  <button onClick={() => setDeleteEventConfirm(e.id)} className="p-1 rounded hover:bg-red-50"><Trash2 className="w-4 h-4 text-red-500" /></button>
                                 </div>
                               </td>
                             </tr>
@@ -824,7 +798,7 @@ export default function AdminPanel() {
                 </div>
               )}
 
-              {/* ── MILAD REQUESTS ────────────────────────────────────────── */}
+              {/* ── MILAD REQUESTS ── */}
               {activeTab === 'milad-requests' && (
                 <div className={`${card} rounded-xl shadow-sm p-6`}>
                   <h3 className={`text-xl font-semibold mb-6 ${text}`}>মিলাদ অনুরোধ</h3>
@@ -840,21 +814,11 @@ export default function AdminPanel() {
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(m.status)}`}>{m.status}</span>
                           </div>
                           {m.description && <p className={`text-sm mt-2 ${sub}`}>{m.description}</p>}
-                          {m.admin_remark && (
-                            <div className="mt-2 p-2 bg-blue-50 rounded">
-                              <p className="text-xs text-blue-600">Admin Note: {m.admin_remark}</p>
-                            </div>
-                          )}
+                          {m.admin_remark && <div className="mt-2 p-2 bg-blue-50 rounded"><p className="text-xs text-blue-600">Admin Note: {m.admin_remark}</p></div>}
                           {m.status === 'pending' && (
                             <div className="flex justify-end gap-2 mt-3">
-                              <button onClick={() => handleMiladStatus(m.id, 'approved')}
-                                className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center gap-1">
-                                <CheckCircle className="w-4 h-4" /> অনুমোদন
-                              </button>
-                              <button onClick={() => handleMiladStatus(m.id, 'rejected')}
-                                className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center gap-1">
-                                <XCircle className="w-4 h-4" /> বাতিল
-                              </button>
+                              <button onClick={() => handleMiladStatus(m.id, 'approved')} className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> অনুমোদন</button>
+                              <button onClick={() => handleMiladStatus(m.id, 'rejected')} className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center gap-1"><XCircle className="w-4 h-4" /> বাতিল</button>
                             </div>
                           )}
                         </div>
@@ -864,40 +828,89 @@ export default function AdminPanel() {
                 </div>
               )}
 
-              {/* ── DONATIONS ─────────────────────────────────────────────── */}
+              {/* ── DONATIONS ── */}
               {activeTab === 'donations' && (
-                <div className={`${card} rounded-xl shadow-sm p-6`}>
-                  <h3 className={`text-xl font-semibold mb-6 ${text}`}>দানের তালিকা</h3>
-                  {donations.length === 0 ? <p className={`text-center py-8 ${sub}`}>কোনো দান নেই</p> : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                          <tr>{['Transaction ID', 'নাম', 'পরিমাণ', 'ক্যাটাগরি', 'পদ্ধতি', 'স্ট্যাটাস', 'তারিখ'].map(h => (
-                            <th key={h} className={`text-left p-3 font-medium ${sub}`}>{h}</th>
-                          ))}</tr>
-                        </thead>
-                        <tbody>
-                          {donations.map((d: any) => (
-                            <tr key={d.id} className={`border-b ${bdr}`}>
-                              <td className={`p-3 text-xs ${sub}`}>{d.tran_id}</td>
-                              <td className={`p-3 font-medium ${text}`}>{d.name || 'Anonymous'}</td>
-                              <td className="p-3 font-medium text-emerald-600">৳{d.amount}</td>
-                              <td className={`p-3 ${sub}`}>{categoryNames[d.category] || d.category}</td>
-                              <td className={`p-3 ${sub}`}>{d.payment_method || '-'}</td>
-                              <td className="p-3">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(d.payment_status)}`}>{d.payment_status}</span>
-                              </td>
-                              <td className={`p-3 ${sub}`}>{d.created_at?.slice(0, 10)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                <div className="space-y-4">
+                  {/* ✅ Donation stats summary */}
+                  {donationStats && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className={`${card} rounded-xl p-4 shadow-sm`}>
+                        <p className={`text-xs ${sub} mb-1`}>মোট সংগৃহীত</p>
+                        <p className="text-2xl font-bold text-emerald-600">৳{donationStats.total_completed_amount.toLocaleString('en-BD')}</p>
+                      </div>
+                      <div className={`${card} rounded-xl p-4 shadow-sm`}>
+                        <p className={`text-xs ${sub} mb-1`}>মোট দান সংখ্যা</p>
+                        <p className={`text-2xl font-bold ${text}`}>{donationStats.total_count}</p>
+                      </div>
+                      <div className={`${card} rounded-xl p-4 shadow-sm`}>
+                        <p className={`text-xs ${sub} mb-1`}>প্রক্রিয়াধীন</p>
+                        <p className="text-2xl font-bold text-yellow-600">{donationStats.pending_count}</p>
+                      </div>
                     </div>
                   )}
+
+                  <div className={`${card} rounded-xl shadow-sm p-6`}>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+                      <h3 className={`text-xl font-semibold ${text}`}>দানের তালিকা</h3>
+
+                      {/* ✅ Filter buttons */}
+                      <div className="flex flex-wrap gap-2">
+                        {/* Status filter */}
+                        {[
+                          { key: 'all',       label: 'সব' },
+                          { key: 'completed', label: '✓ সম্পন্ন' },
+                          { key: 'pending',   label: '⏳ প্রক্রিয়াধীন' },
+                          { key: 'failed',    label: '✗ ব্যর্থ' },
+                        ].map(f => (
+                          <button key={f.key} onClick={() => setDonationFilter(f.key)}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                              donationFilter === f.key ? 'bg-emerald-600 text-white' : `border ${bdr} ${sub} hover:bg-gray-100`
+                            }`}>
+                            {f.label}
+                          </button>
+                        ))}
+                        {/* Category filter */}
+                        <select
+                          value={['all','completed','pending','failed'].includes(donationFilter) ? 'cat_all' : donationFilter}
+                          onChange={e => setDonationFilter(e.target.value === 'cat_all' ? 'all' : e.target.value)}
+                          className={`px-3 py-1 rounded-lg text-xs border ${bdr} ${text} ${darkMode ? 'bg-gray-700' : 'bg-white'} focus:outline-none`}>
+                          <option value="cat_all">সব ক্যাটাগরি</option>
+                          {Object.entries(categoryNames).map(([key, val]) => (
+                            <option key={key} value={key}>{val}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {filteredDonations.length === 0 ? <p className={`text-center py-8 ${sub}`}>কোনো দান নেই</p> : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                            <tr>{['Transaction ID', 'নাম', 'পরিমাণ', 'ক্যাটাগরি', 'পদ্ধতি', 'স্ট্যাটাস', 'তারিখ'].map(h => (
+                              <th key={h} className={`text-left p-3 font-medium ${sub}`}>{h}</th>
+                            ))}</tr>
+                          </thead>
+                          <tbody>
+                            {filteredDonations.map((d: any) => (
+                              <tr key={d.id} className={`border-b ${bdr}`}>
+                                <td className={`p-3 text-xs ${sub}`}>{d.tran_id}</td>
+                                <td className={`p-3 font-medium ${text}`}>{d.name || 'Anonymous'}</td>
+                                <td className="p-3 font-medium text-emerald-600">৳{d.amount}</td>
+                                <td className={`p-3 ${sub}`}>{categoryNames[d.category] || d.category}</td>
+                                <td className={`p-3 ${sub}`}>{d.payment_method || '-'}</td>
+                                <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(d.payment_status)}`}>{d.payment_status}</span></td>
+                                <td className={`p-3 ${sub}`}>{d.created_at?.slice(0, 10)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* ── SETTINGS ──────────────────────────────────────────────── */}
+              {/* ── SETTINGS ── */}
               {activeTab === 'settings' && (
                 <div className={`${card} rounded-xl shadow-sm p-6 max-w-xl`}>
                   <h3 className={`text-xl font-semibold mb-6 ${text}`}>সেটিংস</h3>
@@ -905,11 +918,10 @@ export default function AdminPanel() {
                     {[
                       { label: 'Site Name',  type: 'text',  value: 'Ad-Diin Mosque' },
                       { label: 'Site Email', type: 'email', value: 'info@addiin.com' },
-                    ].map((f) => (
+                    ].map(f => (
                       <div key={f.label} className="flex items-center gap-4">
                         <span className={`text-sm ${sub} w-32 flex-shrink-0`}>{f.label}</span>
-                        <input type={f.type} defaultValue={f.value}
-                          className={`flex-1 border ${bdr} rounded px-3 py-2 text-sm ${text} focus:outline-none focus:ring-2 focus:ring-emerald-500`} />
+                        <input type={f.type} defaultValue={f.value} className={`flex-1 border ${bdr} rounded px-3 py-2 text-sm ${text} focus:outline-none focus:ring-2 focus:ring-emerald-500`} />
                       </div>
                     ))}
                     <div className="flex justify-end pt-2">

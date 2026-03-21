@@ -8,7 +8,7 @@ use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\MiladController;
 use App\Http\Controllers\IslamicEventController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\UserController; // ✅ নতুন
+use App\Http\Controllers\UserController;
 
 // ── Public Routes ─────────────────────────────────────────
 Route::prefix('v1')->group(function () {
@@ -63,8 +63,8 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::delete('/{milad}',  [MiladController::class, 'destroy']);
     });
     Route::prefix('payment')->group(function () {
-        Route::post('/initiate',       [PaymentController::class, 'initiate']);
-        Route::get('/user/donations',  [PaymentController::class, 'userDonations']);
+        Route::post('/initiate',      [PaymentController::class, 'initiate']);
+        Route::get('/user/donations', [PaymentController::class, 'userDonations']);
     });
 
     // ── Admin Routes ──────────────────────────────────────
@@ -77,10 +77,10 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::post('/prayer-times/order',        [PrayerTimeController::class, 'updateOrder']);
 
         // Milad
-        Route::get('/milads',                     [MiladController::class, 'adminIndex']);
-        Route::patch('/milads/{milad}/status',    [MiladController::class, 'updateStatus']);
+        Route::get('/milads',                  [MiladController::class, 'adminIndex']);
+        Route::patch('/milads/{milad}/status', [MiladController::class, 'updateStatus']);
 
-        // ✅ Users — UserController use করা হচ্ছে
+        // Users
         Route::get('/users',         [UserController::class, 'index']);
         Route::get('/users/{id}',    [UserController::class, 'show']);
         Route::put('/users/{id}',    [UserController::class, 'update']);
@@ -92,6 +92,9 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
             Route::put('/{id}',    [IslamicEventController::class, 'update']);
             Route::delete('/{id}', [IslamicEventController::class, 'destroy']);
         });
+
+        // ✅ Donations — সব donations admin দেখতে পাবে
+        Route::get('/donations', [PaymentController::class, 'adminDonations']);
     });
 });
 
@@ -100,7 +103,7 @@ Route::get('/health', function () {
 });
 
 Route::prefix('v1/verify')->group(function () {
-    Route::post('/send-code',    [VerificationController::class, 'sendCode']);
-    Route::post('/verify-code',  [VerificationController::class, 'verifyCode']);
-    Route::post('/resend-code',  [VerificationController::class, 'resendCode']);
+    Route::post('/send-code',   [VerificationController::class, 'sendCode']);
+    Route::post('/verify-code', [VerificationController::class, 'verifyCode']);
+    Route::post('/resend-code', [VerificationController::class, 'resendCode']);
 });
