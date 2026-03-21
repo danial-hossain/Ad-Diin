@@ -235,8 +235,11 @@ SELECT * FROM users;
 UPDATE users
 SET role = 'admin'
 WHERE email = 'danialhossain2024@gmail.com';
+SELECT * FROM islamic_events;
+SHOW COLUMNS FROM islamic_events LIKE 'event_type';
 
 
+SELECT * FROM prayer_times; 
 SELECT * FROM verifications;
 SELECT * FROM password_reset_tokens;
 SELECT * from milads;
