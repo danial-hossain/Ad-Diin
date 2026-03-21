@@ -26,14 +26,16 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];
 
     protected $routeMiddleware = [
-        'check.admin' => \App\Http\Middleware\CheckAdminCredentials::class,
+        // ✅ Admin middleware যোগ করা হয়েছে
+        'admin'            => \App\Http\Middleware\AdminMiddleware::class,
+        'check.admin'      => \App\Http\Middleware\CheckAdminCredentials::class,
+
         'auth'             => \App\Http\Middleware\Authenticate::class,
         'auth.basic'       => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'cache.headers'    => \Illuminate\Http\Middleware\SetCacheHeaders::class,
