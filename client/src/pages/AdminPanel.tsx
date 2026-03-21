@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, HandHeart, Calendar,
-  Settings, LogOut, Search, Menu, X,
+  LogOut, Menu, X, Phone, Info,
   UserCheck, UserX, MessageSquare,
   CheckCircle, XCircle, Loader2, BookOpen,
   Moon, Sun, Trash2, Edit, Save, TrendingUp
@@ -60,7 +60,6 @@ export default function AdminPanel() {
   const [activeTab, setActiveTab]     = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [darkMode, setDarkMode]       = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading]         = useState(false);
 
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -316,7 +315,8 @@ export default function AdminPanel() {
     { id: 'events',         label: 'Events',         icon: Calendar        },
     { id: 'milad-requests', label: 'Milad Requests', icon: MessageSquare   },
     { id: 'donations',      label: 'Donations',      icon: HandHeart       },
-    { id: 'settings',       label: 'Settings',       icon: Settings        },
+    { id: 'contact',        label: 'Contact',        icon: Phone           },
+    { id: 'about',          label: 'About Us',       icon: Info            },
   ];
 
   // ✅ Category stats for bar chart
@@ -494,10 +494,7 @@ export default function AdminPanel() {
               <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-gray-100 transition">
                 <Menu className={`w-5 h-5 ${sub}`} />
               </button>
-              <div className={`hidden md:flex items-center rounded-lg px-3 py-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                <Search className="w-4 h-4 text-gray-400" />
-                <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className={`bg-transparent border-none focus:outline-none ml-2 text-sm w-48 ${text}`} />
-              </div>
+
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-lg hover:bg-gray-100 transition">
@@ -687,10 +684,7 @@ export default function AdminPanel() {
                           ))}</tr>
                         </thead>
                         <tbody>
-                          {users.filter(u => !searchQuery ||
-                            u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            u.email?.toLowerCase().includes(searchQuery.toLowerCase())
-                          ).map((u: any) => (
+                          {users.map((u: any) => (
                             <tr key={u.id} className={`border-b ${bdr}`}>
                               <td className={`p-3 font-medium ${text}`}>{u.name}</td>
                               <td className={`p-3 ${sub}`}>{u.email}</td>
@@ -910,24 +904,19 @@ export default function AdminPanel() {
                 </div>
               )}
 
-              {/* ── SETTINGS ── */}
-              {activeTab === 'settings' && (
-                <div className={`${card} rounded-xl shadow-sm p-6 max-w-xl`}>
-                  <h3 className={`text-xl font-semibold mb-6 ${text}`}>সেটিংস</h3>
-                  <div className="space-y-4">
-                    {[
-                      { label: 'Site Name',  type: 'text',  value: 'Ad-Diin Mosque' },
-                      { label: 'Site Email', type: 'email', value: 'info@addiin.com' },
-                    ].map(f => (
-                      <div key={f.label} className="flex items-center gap-4">
-                        <span className={`text-sm ${sub} w-32 flex-shrink-0`}>{f.label}</span>
-                        <input type={f.type} defaultValue={f.value} className={`flex-1 border ${bdr} rounded px-3 py-2 text-sm ${text} focus:outline-none focus:ring-2 focus:ring-emerald-500`} />
-                      </div>
-                    ))}
-                    <div className="flex justify-end pt-2">
-                      <button className="px-4 py-2 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700">Save Changes</button>
-                    </div>
-                  </div>
+              {/* ── CONTACT ── */}
+              {activeTab === 'contact' && (
+                <div className={`${card} rounded-xl shadow-sm p-6 max-w-2xl`}>
+                  <h3 className={`text-xl font-semibold mb-6 ${text}`}>Contact</h3>
+                  <p className={`${sub} text-sm`}>এই পেজটি এখনো তৈরি হয়নি।</p>
+                </div>
+              )}
+
+              {/* ── ABOUT US ── */}
+              {activeTab === 'about' && (
+                <div className={`${card} rounded-xl shadow-sm p-6 max-w-2xl`}>
+                  <h3 className={`text-xl font-semibold mb-6 ${text}`}>About Us</h3>
+                  <p className={`${sub} text-sm`}>এই পেজটি এখনো তৈরি হয়নি।</p>
                 </div>
               )}
             </>
