@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { MessageCircle, Phone, Mail, MapPin, X, Send, Plus } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MessageCircle, Phone, Mail, MapPin, Send, Plus, AlertCircle, Loader } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API_URL = 'http://localhost:8000/api/v1';
+const API_URL = 'http://localhost:8000';
 
 interface Message {
   id: number;
@@ -42,17 +43,21 @@ interface Conversation {
 }
 
 export default function MessagingPage() {
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const conversationRequestInFlight = useRef(false);
+  const messagesRequestInFlight = useRef(false);
 
   // Load conversations
   useEffect(() => {
     loadConversations();
-    const interval = setInterval(loadConversations, 3000); // Refresh every 3 seconds
+    const interval = setInterval(() => loadConversations(true), 8000); // Background refresh
     return () => clearInterval(interval);
   }, []);
 
@@ -60,55 +65,171 @@ export default function MessagingPage() {
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation.id);
-      const interval = setInterval(() => loadMessages(selectedConversation.id), 2000);
+      const interval = setInterval(() => loadMessages(selectedConversation.id, true), 3000);
       return () => clearInterval(interval);
     }
   }, [selectedConversation]);
 
-  const loadConversations = async () => {
+  const loadConversations = async (silent = false) => {
+    if (conversationRequestInFlight.current) {
+      return;
+    }
+
+    conversationRequestInFlight.current = true;
+
     try {
+      if (!silent) {
+        setError(null);
+      }
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/messages`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setConversations(response.data.conversations);
       
-      // Load unread count
-      const unreadRes = await axios.get(`${API_URL}/messages/unread`, {
-        headers: { Authorization: `Bearer ${token}` }
+      console.log('Loading conversations... Token present:', !!token);
+      
+      if (!token) {
+        setError('Not authenticated. Redirecting to login...');
+        setLoading(false);
+        console.warn('No token found');
+        navigate('/user-login', { state: { from: '/messaging' } });
+        return;
+      }
+
+      console.log('Fetching from:', `${API_URL}/api/v1/messages`);
+      const response = await axios.get(`${API_URL}/api/v1/messages`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
       });
-      setUnreadCount(unreadRes.data.unread_count);
-    } catch (error) {
-      console.error('Failed to load conversations:', error);
+      
+      console.log('Conversations response:', response.data);
+      
+      if (!response.data.success) {
+        const errorMsg = response.data.message || 'Failed to load conversations';
+        setError(errorMsg);
+        setLoading(false);
+        if (String(errorMsg).toLowerCase().includes('unauthenticated')) {
+          navigate('/user-login', { state: { from: '/messaging' } });
+        }
+        return;
+      }
+
+      setConversations(response.data.conversations || []);
+      console.log('Conversations loaded:', response.data.conversations?.length || 0);
+      // Load unread count
+      try {
+        const unreadRes = await axios.get(`${API_URL}/api/v1/messages/unread`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 8000
+        });
+        if (unreadRes.data.success) {
+          setUnreadCount(unreadRes.data.unread_count);
+        }
+      } catch (err) {
+        console.warn('Failed to load unread count:', err);
+      }
+      
+      setLoading(false);
+    } catch (error: any) {
+      console.error('Failed to load conversations:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to load conversations';
+      // Background polling timeout should not block the chat UI.
+      if (!silent || !String(errorMsg).toLowerCase().includes('timeout')) {
+        setError(errorMsg);
+      }
+      setLoading(false);
+      if (error.response?.status === 401 || String(errorMsg).toLowerCase().includes('unauthenticated')) {
+        navigate('/user-login', { state: { from: '/messaging' } });
+      }
+      if (!silent) {
+        toast.error('Error: ' + errorMsg);
+      }
+    } finally {
+      conversationRequestInFlight.current = false;
     }
   };
 
-  const loadMessages = async (conversationId: number) => {
+  const loadMessages = async (conversationId: number, silent = false) => {
+    if (messagesRequestInFlight.current) {
+      return;
+    }
+
+    messagesRequestInFlight.current = true;
+
     try {
+      if (!silent) {
+        setError(null);
+      }
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/messages/${conversationId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.get(`${API_URL}/api/v1/messages/${conversationId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 15000
       });
-      setMessages(response.data.messages);
-    } catch (error) {
+      
+      if (response.data.success) {
+        setMessages(response.data.messages || []);
+      }
+    } catch (error: any) {
       console.error('Failed to load messages:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to load messages';
+      if (!silent || !String(errorMsg).toLowerCase().includes('timeout')) {
+        setError(errorMsg);
+      }
+    } finally {
+      messagesRequestInFlight.current = false;
     }
   };
 
   const startNewConversation = async () => {
     try {
-      setLoading(true);
+      setError(null);
       const token = localStorage.getItem('token');
+      
+      console.log('Creating new conversation... Token present:', !!token);
+      
+      if (!token) {
+        setError('Not authenticated. Please login first.');
+        toast.error('Please login to create a conversation');
+        return;
+      }
+
+      setLoading(true);
+      console.log('POST to:', `${API_URL}/api/v1/messages/create`);
+      
       const response = await axios.post(
-        `${API_URL}/messages/create`,
+        `${API_URL}/api/v1/messages/create`,
         { subject: 'Support Request' },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        }
       );
-      setSelectedConversation(response.data.conversation);
-      await loadConversations();
-      toast.success('New conversation started');
-    } catch (error) {
-      toast.error('Failed to create conversation');
+      
+      console.log('Create conversation response:', response.data);
+      
+      if (response.data.success) {
+        setSelectedConversation(response.data.conversation);
+        await loadConversations(true);
+        toast.success('New conversation started');
+      } else {
+        throw new Error(response.data.message || 'Failed to create conversation');
+      }
+    } catch (error: any) {
+      console.error('Create conversation error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to create conversation';
+      setError(errorMsg);
+      toast.error('Error: ' + errorMsg);
     } finally {
       setLoading(false);
     }
@@ -118,18 +239,23 @@ export default function MessagingPage() {
     if (!messageInput.trim() || !selectedConversation) return;
 
     try {
+      setError(null);
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/messages/${selectedConversation.id}/send`,
+        `${API_URL}/api/v1/messages/${selectedConversation.id}/send`,
         { message: messageInput },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 }
       );
       
-      setMessages([...messages, response.data.message]);
-      setMessageInput('');
-      await loadConversations();
-    } catch (error) {
-      toast.error('Failed to send message');
+      if (response.data.success) {
+        setMessages([...messages, response.data.message]);
+        setMessageInput('');
+        loadConversations(true);
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Failed to send message';
+      setError(errorMsg);
+      toast.error('Error: ' + errorMsg);
     }
   };
 
@@ -139,6 +265,37 @@ export default function MessagingPage() {
       <div className="pointer-events-none absolute -right-28 bottom-10 h-80 w-80 rounded-full bg-teal-300/20 blur-3xl" />
 
       <div className="relative mx-auto max-w-6xl">
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <Loader className="h-12 w-12 animate-spin text-emerald-600 mx-auto mb-4" />
+              <p className="text-slate-600 font-semibold">Loading conversations...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-red-900">{error}</p>
+              <button
+                onClick={() => {
+                  setError(null);
+                  loadConversations();
+                }}
+                className="mt-2 text-sm text-red-700 hover:text-red-900 underline font-medium"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!loading && (
+          <>
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-4xl font-bold text-slate-900 flex items-center gap-3">
             <MessageCircle className="h-10 w-10 text-emerald-600" />
@@ -323,6 +480,8 @@ export default function MessagingPage() {
             <p className="text-sm text-slate-600">Dhaka, Bangladesh</p>
           </div>
         </div>
+          </>
+        )}
       </div>
     </section>
   );
