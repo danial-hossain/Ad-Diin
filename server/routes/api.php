@@ -9,6 +9,7 @@ use App\Http\Controllers\MiladController;
 use App\Http\Controllers\IslamicEventController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\MessageController;
 
 // ── Public Routes ─────────────────────────────────────────
 Route::prefix('v1')->group(function () {
@@ -65,6 +66,16 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
     Route::prefix('payment')->group(function () {
         Route::post('/initiate',      [PaymentController::class, 'initiate']);
         Route::get('/user/donations', [PaymentController::class, 'userDonations']);
+    });
+
+    // ── Messaging Routes ───────────────────────────────────
+    Route::prefix('messages')->group(function () {
+        Route::get('/', [MessageController::class, 'getConversations']);
+        Route::get('/unread', [MessageController::class, 'getUnreadCount']);
+        Route::post('/create', [MessageController::class, 'getOrCreateConversation']);
+        Route::get('/{conversation_id}', [MessageController::class, 'getMessages']);
+        Route::post('/{conversation_id}/send', [MessageController::class, 'sendMessage']);
+        Route::patch('/{conversation_id}/close', [MessageController::class, 'closeConversation']);
     });
 
     // ── Admin Routes ──────────────────────────────────────
