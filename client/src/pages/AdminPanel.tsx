@@ -8,7 +8,7 @@ import {
   Moon, Sun, Trash2, Edit, Save, TrendingUp
 } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_BACKEND_ENDPOINT || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_BACKEND_ENDPOINT || 'http://127.0.0.1:8000';
 
 function authHeaders() {
   const token = localStorage.getItem('token');

@@ -28,7 +28,7 @@ export default function DonatePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const API_URL = import.meta.env.VITE_BACKEND_ENDPOINT || 'http://localhost:8000';
+  const API_URL = import.meta.env.VITE_BACKEND_ENDPOINT || 'http://127.0.0.1:8000';
 
   const categories: DonationCategory[] = [
     { id: 'zakat',     title: 'Zakat',            titleBn: 'যাকাত',          descriptionBn: 'আপনার যাকাত দিয়ে দরিদ্রদের সহায়তা করুন',        icon: <Heart className="w-8 h-8" />,    color: 'text-emerald-600', bgColor: 'bg-emerald-50', minAmount: 100 },

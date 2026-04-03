@@ -36,7 +36,7 @@ export default function PrayerTimesPage() {
     const fetchPrayerTimes = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:8000/api/v1/prayer-times');
+            const response = await fetch('http://127.0.0.1:8000/api/v1/prayer-times');
             const data = await response.json();
             
             console.log('API Data:', data); // For debugging

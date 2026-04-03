@@ -262,7 +262,7 @@ export default function EventsPage() {
         setEventsError('');
         
         // Fetch from your Laravel backend
-        const response = await fetch('http://localhost:8000/api/v1/events/all');
+        const response = await fetch('http://127.0.0.1:8000/api/v1/events/all');
         const data = await response.json();
         
         if (data.success) {

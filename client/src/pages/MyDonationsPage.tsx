@@ -18,7 +18,7 @@ interface Donation {
   is_anonymous: boolean;
 }
 
-const API_URL = import.meta.env.VITE_BACKEND_ENDPOINT || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_BACKEND_ENDPOINT || 'http://127.0.0.1:8000';
 
 export default function MyDonationsPage() {
   const navigate = useNavigate();

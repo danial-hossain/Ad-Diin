@@ -70,7 +70,7 @@ export default function EmailVerificationPage() {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/verify/verify-code', {
+      const res = await fetch('http://127.0.0.1:8000/api/v1/verify/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: fullCode })
@@ -98,7 +98,7 @@ export default function EmailVerificationPage() {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/verify/resend-code', {
+      const res = await fetch('http://127.0.0.1:8000/api/v1/verify/resend-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

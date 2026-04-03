@@ -9,7 +9,7 @@ export default function DonateSuccess() {
   const [donation, setDonation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = import.meta.env.VITE_BACKEND_ENDPOINT || 'http://localhost:8000';
+  const API_URL = import.meta.env.VITE_BACKEND_ENDPOINT || 'http://127.0.0.1:8000';
 
   useEffect(() => {
     if (tranId) {
