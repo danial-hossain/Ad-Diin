@@ -80,13 +80,18 @@ class MessageController extends Controller
         }
 
         // Verify user is part of this conversation
-        if (!$user->isAdmin() && $conversation->user_id !== $user->id) {
-            if ($user->isAdmin() && $conversation->admin_id !== $user->id) {
+        if ($user->isAdmin()) {
+            if ($conversation->admin_id && $conversation->admin_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized'
                 ], 403);
             }
+        } elseif ($conversation->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
         }
 
         $messages = Message::where('conversation_id', $conversationId)
@@ -112,24 +117,35 @@ class MessageController extends Controller
     /**
      * Send a message.
      */
-    public function sendMessage(Request $request)
+    public function sendMessage(Request $request, $conversationId)
     {
         $request->validate([
-            'conversation_id' => 'required|exists:conversations,id',
             'message' => 'required|string|max:5000',
         ]);
 
         $user = Auth::user();
-        $conversation = Conversation::find($request->conversation_id);
+        $conversation = Conversation::find($conversationId);
+
+        if (!$conversation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Conversation not found'
+            ], 404);
+        }
 
         // Verify user is part of this conversation
-        if (!$user->isAdmin() && $conversation->user_id !== $user->id) {
-            if ($user->isAdmin() && $conversation->admin_id !== $user->id) {
+        if ($user->isAdmin()) {
+            if ($conversation->admin_id && $conversation->admin_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized'
                 ], 403);
             }
+        } elseif ($conversation->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
         }
 
         // If admin is responding for the first time, auto-assign
@@ -140,7 +156,7 @@ class MessageController extends Controller
         }
 
         $message = Message::create([
-            'conversation_id' => $request->conversation_id,
+            'conversation_id' => $conversation->id,
             'sender_id' => $user->id,
             'message' => $request->message,
             'sender_type' => $user->isAdmin() ? 'admin' : 'user',
