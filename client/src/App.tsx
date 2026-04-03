@@ -7,6 +7,7 @@ import ActivitiesPage from './pages/ActivitiesPage';
 import DonatePage from './pages/DonatePage';
 import DonateSuccess from './pages/DonateSuccess';
 import ContactPage from './pages/ContactPage';
+import MessagingPage from './pages/MessagingPage';
 import EventsPage from './pages/EventsPage';
 import ZakatCalculatorPage from './pages/ZakatCalculatorPage';
 import PrayerTimesPage from './pages/PrayerTimesPage';
@@ -39,6 +40,7 @@ function Layout() {
           <Route path="/activities" element={<ActivitiesPage />} />
           <Route path="/donate" element={<DonatePage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/messaging" element={<MessagingPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/zakat" element={<ZakatCalculatorPage />} />
           <Route path="/prayer-times" element={<PrayerTimesPage />} />
