@@ -17,8 +17,11 @@ class MessageController extends Controller
         $user = Auth::user();
 
         if ($user->isAdmin()) {
-            // Admins see all conversations assigned to them
-            $conversations = Conversation::where('admin_id', $user->id)
+            // Admins see their assigned conversations plus unassigned inbox.
+            $conversations = Conversation::where(function ($query) use ($user) {
+                    $query->where('admin_id', $user->id)
+                          ->orWhereNull('admin_id');
+                })
                 ->with(['user', 'lastMessage.sender'])
                 ->latest('updated_at')
                 ->get();
@@ -211,8 +214,12 @@ class MessageController extends Controller
         $user = Auth::user();
 
         if ($user->isAdmin()) {
-            $unread = Message::whereIn('conversation_id', 
-                    Conversation::where('admin_id', $user->id)->pluck('id'))
+            $conversationIds = Conversation::where(function ($query) use ($user) {
+                    $query->where('admin_id', $user->id)
+                          ->orWhereNull('admin_id');
+                })->pluck('id');
+
+            $unread = Message::whereIn('conversation_id', $conversationIds)
                 ->where('sender_id', '!=', $user->id)
                 ->where('is_read', false)
                 ->count();
