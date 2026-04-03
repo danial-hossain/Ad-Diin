@@ -71,7 +71,7 @@ Navigate to: **`http://localhost:5173`**
 2. Type a message in the input box at bottom
 3. Click Send (or press Enter)
 4. Should see message appear immediately
-5. Messages auto-refresh every 2 seconds
+5. Messages auto-refresh every 3 seconds
 ```
 
 #### Test 3: Check Admin View
@@ -149,7 +149,7 @@ SELECT COUNT(*) FROM messages;
 When you visit the messaging page, the **Console (F12)** should show:
 ```
 Loading conversations... Token present: true
-Fetching from: http://localhost:8000/v1/messages
+Fetching from: http://localhost:8000/api/v1/messages
 Conversations response: {success: true, conversations: [...]}
 Conversations loaded: 2  
 ```
@@ -187,12 +187,12 @@ Copy these errors when reporting issues!
 ## 📝 API Endpoints Reference
 
 ```
-GET    /v1/messages              → Get all conversations
-POST   /v1/messages/create       → Create new conversation  
-GET    /v1/messages/{id}         → Get messages for conversation
-POST   /v1/messages/{id}/send    → Send message
-PATCH  /v1/messages/{id}/close   → Close conversation (admin)
-GET    /v1/messages/unread       → Get unread count
+GET    /api/v1/messages              → Get all conversations
+POST   /api/v1/messages/create       → Create new conversation  
+GET    /api/v1/messages/{id}         → Get messages for conversation
+POST   /api/v1/messages/{id}/send    → Send message
+PATCH  /api/v1/messages/{id}/close   → Close conversation (admin)
+GET    /api/v1/messages/unread       → Get unread count
 ```
 
 All require `Authorization: Bearer {token}` header
