@@ -155,7 +155,7 @@ export default function AdminPanel() {
         setDonations(toArray(d.data));
         if (d.stats) setDonationStats(d.stats);
       } else if (tab === 'messages') {
-        const r = await fetch(`${API_URL}/v1/messages`, { headers: authHeaders() });
+        const r = await fetch(`${API_URL}/api/v1/messages`, { headers: authHeaders() });
         const d = await r.json();
         setConversations(toArray(d.conversations) || []);
       }
@@ -295,7 +295,7 @@ export default function AdminPanel() {
 
   const loadConversationMessages = async (conversationId: number) => {
     try {
-      const r = await fetch(`${API_URL}/v1/messages/${conversationId}`, { headers: authHeaders() });
+      const r = await fetch(`${API_URL}/api/v1/messages/${conversationId}`, { headers: authHeaders() });
       const d = await r.json();
       if (d.success) {
         setConversationMessages(d.messages || []);
@@ -313,7 +313,7 @@ export default function AdminPanel() {
     if (!messageInput.trim() || !selectedConversation) return;
     setMessageSending(true);
     try {
-      const r = await fetch(`${API_URL}/v1/messages/${selectedConversation.id}/send`, {
+      const r = await fetch(`${API_URL}/api/v1/messages/${selectedConversation.id}/send`, {
         method: 'POST', headers: authHeaders(),
         body: JSON.stringify({ message: messageInput })
       });
@@ -330,7 +330,7 @@ export default function AdminPanel() {
   const handleCloseConversation = async () => {
     if (!selectedConversation) return;
     try {
-      const r = await fetch(`${API_URL}/v1/messages/${selectedConversation.id}/close`, {
+      const r = await fetch(`${API_URL}/api/v1/messages/${selectedConversation.id}/close`, {
         method: 'PATCH', headers: authHeaders()
       });
       const d = await r.json();
