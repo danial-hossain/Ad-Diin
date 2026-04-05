@@ -154,24 +154,24 @@ Diin AI integration and API
 
 Zakat calculator with formulas
 
-Admin panel UI design
+Contact page with form 
 
-Activities page development
-
-Contact page with form
-
-Admin panel backend integration
+Messaging System in Contact
 
 Testing and bug fixes
 
 
 ⏳ Milestone 3: Finalization & Admin Panel (Upcoming)
 
+Admin Panel Design
+
 Complete admin CRUD operations
 
 Dashboard analytics implementation
 
 Performance optimization
+
+
 
 
 Final testing (Unit/Integration/E2E)
