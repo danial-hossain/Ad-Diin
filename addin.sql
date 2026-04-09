@@ -270,8 +270,23 @@ CREATE TABLE IF NOT EXISTS messages (
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE DATABASE addiin;
 
-
+USE addiin;
+-- ============================================
+-- Table 9: contact
+-- ============================================
+CREATE TABLE `contacts` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `email` VARCHAR(255) NOT NULL,
+  `company` VARCHAR(255) NULL,
+  `message` TEXT NOT NULL,
+  `status` ENUM('unread','read') DEFAULT 'unread',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+ALTER TABLE contacts MODIFY COLUMN status ENUM('unread', 'read', 'replied') DEFAULT 'unread';
 
 
 
@@ -286,7 +301,7 @@ SELECT * FROM donations ;
 SHOW TABLES;
 -- Show all data
 SELECT * FROM users;
-
+SELECT * FROM contacts;
 UPDATE users
 SET role = 'admin'
 WHERE email = 'danialhossain2024@gmail.com';
