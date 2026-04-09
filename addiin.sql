@@ -224,6 +224,61 @@ CREATE TABLE IF NOT EXISTS donations (
     INDEX idx_donations_created_at (created_at)
 );
 
+DESCRIBE users;
+-- ============================================
+-- Table 7: conversations
+-- ============================================
+CREATE TABLE conversations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    admin_id INT NULL,
+    subject VARCHAR(255) NULL,
+    status ENUM('active', 'closed', 'pending') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX (user_id),
+    INDEX (admin_id),
+
+    CONSTRAINT fk_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_admin
+        FOREIGN KEY (admin_id) REFERENCES users(id)
+        ON DELETE SET NULL
+);
+
+-- ============================================
+-- Table 8: messages
+-- ============================================
+CREATE TABLE IF NOT EXISTS messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    conversation_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    message LONGTEXT NOT NULL,
+    sender_type ENUM('user', 'admin') NOT NULL DEFAULT 'user',
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_messages_conversation_id (conversation_id),
+    INDEX idx_messages_sender_id (sender_id),
+
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
+
+
+
+
+
+
+
+
 
 -- Show sample data (after inserts)
 SELECT * FROM donations ;
@@ -235,8 +290,12 @@ SELECT * FROM users;
 UPDATE users
 SET role = 'admin'
 WHERE email = 'danialhossain2024@gmail.com';
+SELECT * FROM islamic_events;
+SHOW COLUMNS FROM islamic_events LIKE 'event_type';
 
-
+SELECT * FROM conversations;
+SELECT * FROM messages;
+SELECT * FROM prayer_times; 
 SELECT * FROM verifications;
 SELECT * FROM password_reset_tokens;
 SELECT * from milads;
@@ -244,6 +303,8 @@ delete from users where id =3;
 delete from verifications where id =5;
 -- MySQL Workbench এ run করুন
 USE addiin;
+
+
 
 
 

@@ -22,6 +22,9 @@ class PaymentController extends Controller
     {
         try {
             $request->validate([
+
+                // eitate check kora hoitece user je data gula ,segula ki thik ase? 
+                //ভুল বা missing data হলে exception throw হবে এবং response error দিবে। 
                 'category'     => 'required|in:zakat,iftar,durjog,sitarto,gachropon,kurbani,orphan,general',
                 'amount'       => 'required|numeric|min:10',
                 'name'         => 'required_if:is_anonymous,false|string|max:255',
@@ -31,8 +34,11 @@ class PaymentController extends Controller
             ]);
 
             $user   = Auth::user();
+            //tansaction id generate kora hoy
+            //প্রতিটা donation কে unique transaction ID assign করা।
+            //payment gateway ba callback e use hobe
             $tranId = 'DON_' . time() . '_' . Str::random(8);
-
+            // nicher eta donation ta database e save korlo,column wise 
             $donation = Donation::create([
                 'user_id'        => $user?->id,
                 'name'           => $request->is_anonymous ? null : $request->name,
@@ -44,11 +50,15 @@ class PaymentController extends Controller
                 'payment_status' => 'pending',
                 'is_anonymous'   => $request->is_anonymous ?? false
             ]);
+            // uprer code e database e data save hocce
+            //nicher 3 line payment gateway te ki info jabe seta handle krtece
+            // payment gateway -> online ekta service jeine taka ta save hbe secure handle
+
 
             $customerName  = $request->is_anonymous ? 'Anonymous' : $request->name;
             $customerEmail = $request->email ?? ($user->email ?? 'customer@example.com');
             $customerPhone = $request->phone;
-
+          //এটা category-এর mapping for gateway display / tracking।
             $categoryNames = [
                 'zakat'     => 'Zakat Donation',
                 'iftar'     => 'Iftar Donation',
@@ -59,17 +69,21 @@ class PaymentController extends Controller
                 'orphan'    => 'Orphan Care Donation',
                 'general'   => 'General Donation'
             ];
+            //jodi category invalid hoy sekhetre just donation hisebe jabe 
+            //Payment gateway-এ বা invoice/receipt-এ সঠিক নাম দেখানোর জন্য
             $productName = $categoryNames[$request->category] ?? 'Donation';
 
             $baseUrl  = env('NGROK_URL');
+
+            //payment gateway te data ta post kora
             $postData = [
                 'total_amount' => $request->amount,
                 'currency'     => 'BDT',
                 'tran_id'      => $tranId,
-                'success_url'  => $baseUrl . '/api/v1/payment/success?tran_id=' . $tranId,
+                'success_url'  => $baseUrl . '/api/v1/payment/success?tran_id=' . $tranId,//payment hole koi jabe eta 
                 'fail_url'     => $baseUrl . '/api/v1/payment/fail?tran_id=' . $tranId,
                 'cancel_url'   => $baseUrl . '/api/v1/payment/cancel?tran_id=' . $tranId,
-                'ipn_url'      => $baseUrl . '/api/v1/payment/ipn',
+                'ipn_url'      => $baseUrl . '/api/v1/payment/ipn',  // SSLCommerz নিজে notify করবে এখানে
                 'cus_name'     => $customerName,
                 'cus_email'    => $customerEmail,
                 'cus_phone'    => $customerPhone,
@@ -91,18 +105,28 @@ class PaymentController extends Controller
             ];
 
             Log::info('Sending to SSLCommerz', ['success_url' => $postData['success_url']]);
+            //SSLCommerz এ পাঠানোর আগে storage/logs/laravel.log এ লিখে রাখছো। যাতে কোনো সমস্যা হলে দেখতে পারো কী পাঠিয়েছিলে।
+
             $raw = $this->sslCommerz->makePayment($postData, 'checkout', 'json');
+            //upre gateway te je data gulo post krtm arki post data e,odi amra ssl commerz e post krbo,
+            //$postData টা SSLCommerz এ পাঠাচ্ছো। SSLCommerz একটা payment page এর link ফেরত দেবে। সেটা $raw তে রাখছো।
+            //donate er por je page ta deki ssl commerz er 
+
             Log::info('SSLCommerz Raw Response', ['response' => $raw]);
 
             if (is_string($raw)) $paymentOptions = json_decode($raw, true);
             else $paymentOptions = $raw;
 
             $status     = strtolower($paymentOptions['status'] ?? '');
+
+            // upre je link ekta deyar kotha ssl commerz er,sei link ta eine ber kora hoitece
             $gatewayUrl = $paymentOptions['redirectGatewayURL']
                 ?? $paymentOptions['GatewayPageURL']
                 ?? (is_string($paymentOptions['data'] ?? null) ? $paymentOptions['data'] : null)
                 ?? null;
 
+
+             //payment successful hole sei gateway link ta call holo   
             if ($status === 'success' && $gatewayUrl) {
                 return response()->json(['success' => true, 'gateway_url' => $gatewayUrl, 'tran_id' => $tranId]);
             }

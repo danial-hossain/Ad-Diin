@@ -63,6 +63,8 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::put('/{milad}',     [MiladController::class, 'update']);
         Route::delete('/{milad}',  [MiladController::class, 'destroy']);
     });
+
+    //User Donate Button click krle payment controller e r payment initiate call hoy
     Route::prefix('payment')->group(function () {
         Route::post('/initiate',      [PaymentController::class, 'initiate']);
         Route::get('/user/donations', [PaymentController::class, 'userDonations']);
@@ -118,3 +120,4 @@ Route::prefix('v1/verify')->group(function () {
     Route::post('/verify-code', [VerificationController::class, 'verifyCode']);
     Route::post('/resend-code', [VerificationController::class, 'resendCode']);
 });
+
