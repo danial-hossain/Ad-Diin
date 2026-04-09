@@ -1,4 +1,4 @@
-import { User, LogOut, UserPlus, LogIn, Menu, X, Settings, FileText } from 'lucide-react';
+import { User, LogOut, UserPlus, LogIn, Menu, X, Settings, FileText, Heart } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 
@@ -61,7 +61,7 @@ export function Header() {
     const token = localStorage.getItem('token');
     try {
       if (token) {
-        await fetch('http://localhost:8000/api/v1/auth/logout', {
+        await fetch('http://127.0.0.1:8000/api/v1/auth/logout', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -142,6 +142,14 @@ export function Header() {
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 flex items-center gap-2"
                       >
                         <FileText className="w-4 h-4" /> My Milad Requests
+                      </button>
+
+                      {/* ✅ NEW: My Donations Button */}
+                      <button
+                        onClick={() => { setIsDropdownOpen(false); navigate('/my-donations'); }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 flex items-center gap-2"
+                      >
+                        <Heart className="w-4 h-4" /> My Donations
                       </button>
 
                       {user.role === 'admin' && (

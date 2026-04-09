@@ -14,7 +14,7 @@ export function PrayerTimes() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('http://localhost:8000/api/v1/prayer-times')
+        fetch('http://127.0.0.1:8000/api/v1/prayer-times')
             .then(res => res.json())
             .then(data => {
                 if (data.success) {

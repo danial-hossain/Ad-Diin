@@ -1,8 +1,10 @@
 import { FormEvent, useState } from 'react';
-import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin, SendHorizontal } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin, SendHorizontal, MessageCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,6 +30,23 @@ export default function ContactPage() {
                 Questions about prayer schedules, activities, donations, or Milad booking? Our team is here to help.
                 Send your message and we will respond as soon as possible.
               </p>
+
+              {/* Messaging CTA */}
+              <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <MessageCircle className="h-5 w-5 text-blue-600 mt-1 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-slate-900 mb-1">Want Real-Time Chat?</p>
+                    <p className="text-sm text-slate-600 mb-3">Use our messaging system to chat with our support team instantly, just like WhatsApp or Messenger.</p>
+                    <button
+                      onClick={() => navigate('/messaging')}
+                      className="text-sm font-bold text-blue-600 hover:text-blue-700 underline"
+                    >
+                      Open Messaging →
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="mt-7 space-y-3">

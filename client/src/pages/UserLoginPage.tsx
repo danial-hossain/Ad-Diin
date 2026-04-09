@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function UserLoginPage() {
   const [email, setEmail] = useState('');
@@ -7,6 +7,10 @@ export default function UserLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // কোথা থেকে এসেছে সেটা মনে রাখো
+  const from = (location.state as any)?.from || '/';
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -18,7 +22,7 @@ export default function UserLoginPage() {
       setLoading(true);
       setError('');
 
-      const res = await fetch('http://localhost:8000/api/v1/auth/login', {
+      const res = await fetch('http://127.0.0.1:8000/api/v1/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,7 +34,6 @@ export default function UserLoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        // 👇 Check if need verification
         if (data.need_verification) {
           alert('Please verify your email first');
           navigate('/verify-email', { state: { email: data.email } });
@@ -39,22 +42,31 @@ export default function UserLoginPage() {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Save complete user data
+      // Token ও user save করো
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Dispatch event for header to update
+      // Header update করো
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('userLogin'));
 
-      navigate('/');
-      window.location.reload();
+      // ✅ Role দেখে redirect করো
+      if (data.user?.role === 'admin') {
+        navigate('/admin/panel');
+      } else {
+        // আগে যে page-এ ছিল সেখানে ফিরে যাও, না হলে home
+        navigate(from === '/user-login' ? '/' : from);
+      }
 
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleLogin();
   };
 
   return (
@@ -86,6 +98,7 @@ export default function UserLoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 placeholder="Enter your email"
                 required
@@ -100,6 +113,7 @@ export default function UserLoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 placeholder="Enter your password"
                 required
@@ -109,7 +123,7 @@ export default function UserLoginPage() {
             <button
               onClick={handleLogin}
               disabled={loading}
-              className="w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>

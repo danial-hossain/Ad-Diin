@@ -93,7 +93,7 @@ export default function UserProfilePage() {
     const token = localStorage.getItem('token');
     
     try {
-      const res = await fetch('http://localhost:8000/api/v1/auth/me', {
+      const res = await fetch('http://127.0.0.1:8000/api/v1/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -141,7 +141,7 @@ export default function UserProfilePage() {
     try {
       setLoading(true);
 
-      const res = await fetch('http://localhost:8000/api/v1/user/update', {
+      const res = await fetch('http://127.0.0.1:8000/api/v1/user/update', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -201,7 +201,7 @@ export default function UserProfilePage() {
       setPasswordError('');
       setPasswordSuccess('');
 
-      const res = await fetch('http://localhost:8000/api/v1/user/change-password', {
+      const res = await fetch('http://127.0.0.1:8000/api/v1/user/change-password', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -242,7 +242,7 @@ export default function UserProfilePage() {
     const token = localStorage.getItem('token');
     
     try {
-      await fetch('http://localhost:8000/api/v1/auth/logout', {
+      await fetch('http://127.0.0.1:8000/api/v1/auth/logout', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
