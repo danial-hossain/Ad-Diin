@@ -10,6 +10,7 @@ use App\Http\Controllers\IslamicEventController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\ContactController;
 
 // ── Public Routes ─────────────────────────────────────────
 Route::prefix('v1')->group(function () {
@@ -34,6 +35,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/{id}',     [IslamicEventController::class, 'show']);
     });
     Route::get('/donation/{tranId}', [PaymentController::class, 'getDonation']);
+
+    // ✅ Contact: public — login ছাড়াই submit করা যাবে
+    Route::post('/contact', [ContactController::class, 'submit']);
 });
 
 // ── Payment Callback Routes ───────────────────────────────
@@ -57,27 +61,26 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::get('/milads',           [MiladController::class, 'userRequests']);
     });
     Route::prefix('milads')->group(function () {
-        Route::post('/',           [MiladController::class, 'store']);
-        Route::get('/{milad}',     [MiladController::class, 'show']);
-        Route::get('/{milad}/edit',[MiladController::class, 'edit']);
-        Route::put('/{milad}',     [MiladController::class, 'update']);
-        Route::delete('/{milad}',  [MiladController::class, 'destroy']);
+        Route::post('/',            [MiladController::class, 'store']);
+        Route::get('/{milad}',      [MiladController::class, 'show']);
+        Route::get('/{milad}/edit', [MiladController::class, 'edit']);
+        Route::put('/{milad}',      [MiladController::class, 'update']);
+        Route::delete('/{milad}',   [MiladController::class, 'destroy']);
     });
 
-    //User Donate Button click krle payment controller e r payment initiate call hoy
     Route::prefix('payment')->group(function () {
         Route::post('/initiate',      [PaymentController::class, 'initiate']);
         Route::get('/user/donations', [PaymentController::class, 'userDonations']);
     });
 
-    // ── Messaging Routes ───────────────────────────────────
+    // ── Messaging Routes ──────────────────────────────────
     Route::prefix('messages')->group(function () {
-        Route::get('/', [MessageController::class, 'getConversations']);
-        Route::get('/unread', [MessageController::class, 'getUnreadCount']);
-        Route::post('/create', [MessageController::class, 'getOrCreateConversation']);
-        Route::get('/{conversation_id}', [MessageController::class, 'getMessages']);
-        Route::post('/{conversation_id}/send', [MessageController::class, 'sendMessage']);
-        Route::patch('/{conversation_id}/close', [MessageController::class, 'closeConversation']);
+        Route::get('/',                              [MessageController::class, 'getConversations']);
+        Route::get('/unread',                        [MessageController::class, 'getUnreadCount']);
+        Route::post('/create',                       [MessageController::class, 'getOrCreateConversation']);
+        Route::get('/{conversation_id}',             [MessageController::class, 'getMessages']);
+        Route::post('/{conversation_id}/send',       [MessageController::class, 'sendMessage']);
+        Route::patch('/{conversation_id}/close',     [MessageController::class, 'closeConversation']);
     });
 
     // ── Admin Routes ──────────────────────────────────────
@@ -106,8 +109,14 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
             Route::delete('/{id}', [IslamicEventController::class, 'destroy']);
         });
 
-        // ✅ Donations — সব donations admin দেখতে পাবে
+        // Donations
         Route::get('/donations', [PaymentController::class, 'adminDonations']);
+
+        // ✅ Contact admin routes — admin middleware এর ভেতরে
+        Route::get('/contact',              [ContactController::class, 'index']);
+        Route::patch('/contact/{id}/read',  [ContactController::class, 'markRead']);
+        Route::post('/contact/{id}/reply',  [ContactController::class, 'reply']);
+        Route::delete('/contact/{id}',      [ContactController::class, 'destroy']);
     });
 });
 
@@ -120,4 +129,3 @@ Route::prefix('v1/verify')->group(function () {
     Route::post('/verify-code', [VerificationController::class, 'verifyCode']);
     Route::post('/resend-code', [VerificationController::class, 'resendCode']);
 });
-
