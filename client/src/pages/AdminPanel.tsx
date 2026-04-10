@@ -466,15 +466,16 @@ export default function AdminPanel() {
         : `${API_URL}/api/v1/admin/activities`;
 
       const token = localStorage.getItem('token');
+     
       const r = await fetch(url, {
-        method: 'POST',
+        method: isEdit ? 'PUT' : 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'ngrok-skip-browser-warning': 'true',
-          ...(isEdit ? { 'X-HTTP-Method-Override': 'PUT' } : {}),
         },
         body: formData,
       });
+       
       const d = await r.json();
       if (d.success) {
         if (isEdit) setActivities(prev => prev.map(a => a.id === editingActivity.id ? { ...a, ...d.data } : a));
@@ -492,13 +493,25 @@ export default function AdminPanel() {
     finally { setActivitySaving(false); }
   };
 
-  const handleDeleteActivity = async (id: string) => {
+  const handleDeleteActivity = async (id: number) => {
     try {
-      const r = await fetch(`${API_URL}/api/v1/admin/activities/${id}`, { method: 'DELETE', headers: authHeaders() });
+      const r = await fetch(`${API_URL}/api/v1/admin/activities/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+  
       const d = await r.json();
-      if (d.success) { setActivities(prev => prev.filter(a => a.id != id)); setDeleteActivityConfirm(null); }
-      else alert(d.message || 'Delete failed');
-    } catch { alert('Network error'); }
+  
+      if (d.success) {
+        setActivities(prev => prev.filter(a => a.id !== id)); // strict compare
+        setDeleteActivityConfirm(null);
+      } else {
+        alert(d.message || 'Delete failed');
+      }
+  
+    } catch {
+      alert('Network error');
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -598,18 +611,37 @@ export default function AdminPanel() {
       )}
 
       {/* ── Activity Delete Confirm ── */}
-      {deleteActivityConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className={`${card} rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl`}>
-            <h3 className={`text-lg font-bold mb-2 ${text}`}>Activity মুছবেন?</h3>
-            <p className={`text-sm mb-6 ${sub}`}>এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteActivityConfirm(null)} className={`px-4 py-2 border ${bdr} rounded-lg text-sm`}>বাতিল</button>
-              <button onClick={() => handleDeleteActivity(deleteActivityConfirm)} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">হ্যাঁ, মুছুন</button>
-            </div>
-          </div>
-        </div>
-      )}
+     {/* ── Activity Delete Confirm ── */}
+{deleteActivityConfirm && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div className={`${card} rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl`}>
+      
+      <h3 className={`text-lg font-bold mb-2 ${text}`}>
+        Activity মুছবেন?
+      </h3>
+
+      <p className={`text-sm mb-6 ${sub}`}>
+        এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+      </p>
+
+      <div className="flex gap-3 justify-end">
+        <button
+          onClick={() => setDeleteActivityConfirm(null)}
+          className={`px-4 py-2 border ${bdr} rounded-lg text-sm`}
+        >
+          বাতিল
+        </button>
+
+        <button
+          onClick={() => handleDeleteActivity(Number(deleteActivityConfirm))}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+        >
+          হ্যাঁ, মুছুন
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* ── Event Modal ── */}
       {eventModal && (

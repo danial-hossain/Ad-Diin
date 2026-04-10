@@ -11,6 +11,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\ActivityController;
 
 // ── Public Routes ─────────────────────────────────────────
 Route::prefix('v1')->group(function () {
@@ -38,6 +39,7 @@ Route::prefix('v1')->group(function () {
 
     // ✅ Contact: public — login ছাড়াই submit করা যাবে
     Route::post('/contact', [ContactController::class, 'submit']);
+    Route::get('/activities', [ActivityController::class, 'index']);
 });
 
 // ── Payment Callback Routes ───────────────────────────────
@@ -117,8 +119,16 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::patch('/contact/{id}/read',  [ContactController::class, 'markRead']);
         Route::post('/contact/{id}/reply',  [ContactController::class, 'reply']);
         Route::delete('/contact/{id}',      [ContactController::class, 'destroy']);
-    });
+
+ // ── Activities ──────────────────────────────────────
+ Route::prefix('activities')->group(function () {
+    Route::get('/',        [ActivityController::class, 'adminIndex']);
+    Route::post('/',       [ActivityController::class, 'store']);
+    Route::put('/{id}',    [ActivityController::class, 'update']);
+    Route::delete('/{id}', [ActivityController::class, 'destroy']);
 });
+});  // closes admin middleware group
+});      // closes auth:api middleware group
 
 Route::get('/health', function () {
     return response()->json(['status' => 'ok', 'timestamp' => now()->toDateTimeString()]);
