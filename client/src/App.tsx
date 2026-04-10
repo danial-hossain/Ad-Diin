@@ -20,7 +20,7 @@ import UserProfilePage from './pages/UserProfilePage';
 import DiinAIPage from './pages/DiinAIPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import MyDonationsPage from './pages/MyDonationsPage';
-import AdminPanel from './pages/AdminPanel';
+import AdminPanel from './admin/AdminPanel';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 
 // Admin route paths — Header ও Footer এখানে দেখাবে না
