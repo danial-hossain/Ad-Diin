@@ -4,6 +4,7 @@ import { Footer } from './components/Footer';
 import Home from './pages/Home';
 import AboutUs from './pages/AboutUs';
 import ActivitiesPage from './pages/ActivitiesPage';
+import ActivityDetails from './pages/ActivityDetails';
 import DonatePage from './pages/DonatePage';
 import DonateSuccess from './pages/DonateSuccess';
 import ContactPage from './pages/ContactPage';
@@ -38,6 +39,7 @@ function Layout() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/activities" element={<ActivitiesPage />} />
+          <Route path="/activities/:id" element={<ActivityDetails />} />
           <Route path="/donate" element={<DonatePage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/messaging" element={<MessagingPage />} />

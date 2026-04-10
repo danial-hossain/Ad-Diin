@@ -39,6 +39,10 @@ export default function ActivitiesPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleActivityClick = (id: number) => {
+    navigate(`/activities/${id}`);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
@@ -64,11 +68,12 @@ export default function ActivitiesPage() {
             {activities.map((activity: any) => (
               <div
                 key={activity.id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200"
+                onClick={() => handleActivityClick(activity.id)}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:-translate-y-1"
               >
-                {/* Image */}
+                {/* Small Image - Thumbnail */}
                 {activity.image_url ? (
-                  <div className="overflow-hidden h-52">
+                  <div className="overflow-hidden h-40">
                     <img
                       src={activity.image_url}
                       alt={activity.title}
@@ -76,9 +81,9 @@ export default function ActivitiesPage() {
                     />
                   </div>
                 ) : (
-                  <div className="h-52 bg-emerald-50 flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="h-40 bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-emerald-200 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                           d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -86,15 +91,25 @@ export default function ActivitiesPage() {
                   </div>
                 )}
 
-                {/* Body */}
+                {/* Body - শুধু শিরোনাম ও ক্যাটাগরি */}
                 <div className="p-5">
                   {activity.category && (
                     <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium mb-2 ${categoryColors[activity.category] || 'bg-gray-100 text-gray-600'}`}>
                       {categoryLabels[activity.category] || activity.category}
                     </span>
                   )}
-                  <h2 className="text-lg font-bold text-gray-900 mb-2">{activity.title}</h2>
-                  <p className="text-sm text-gray-600 leading-relaxed">{activity.description}</p>
+                  <h2 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
+                    {activity.title}
+                  </h2>
+                  {/* বিবরণ এখানে দেখানো হবে না - শুধু ডিটেইলস পেজে */}
+                  
+                  {/* Read More Link */}
+                  <div className="mt-3 text-emerald-600 text-sm font-medium flex items-center gap-1">
+                    বিস্তারিত পড়ুন
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             ))}

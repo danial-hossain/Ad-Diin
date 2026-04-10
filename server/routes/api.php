@@ -13,6 +13,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ActivityController;
 
+
 // ── Public Routes ─────────────────────────────────────────
 Route::prefix('v1')->group(function () {
     Route::prefix('auth')->group(function () {
