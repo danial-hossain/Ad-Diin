@@ -8,7 +8,7 @@ interface PrayerTimesProps extends ThemeProps {
 }
 
 export default function PrayerTimes({
-  darkMode, card, text, sub, bdr, inputCls,
+  darkMode, card, text, sub, bdr,
   prayerTimes, setPrayerTimes,
 }: PrayerTimesProps) {
   const [editingPrayer, setEditingPrayer]   = useState<any | null>(null);

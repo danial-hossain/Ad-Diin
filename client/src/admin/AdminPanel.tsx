@@ -6,18 +6,18 @@ import {
   MessageSquare, Loader2, BookOpen, Moon, Sun, Image, MessageCircle,
 } from 'lucide-react';
 
-import { API_URL, authHeaders, toArray, buildTheme } from '../admin/shared';
+import { API_URL, authHeaders, toArray, buildTheme } from './shared';
 
-import Dashboard     from '../admin/Dashboard';
-import Users         from '../admin/Users';
-import PrayerTimes   from '../admin/PrayerTimes';
-import Events        from '../admin/Events';
-import MiladRequests from '../admin/MiladRequests';
-import Donations     from '../admin/Donations';
-import Messages      from '../admin/Messages';
-import Contact       from '../admin/Contact';
-import Activities    from '../admin/Activities';
-import About         from '../admin/About';
+import Dashboard     from './Dashboard';
+import Users         from './Users';
+import PrayerTimes   from './PrayerTimes';
+import Events        from './Events';
+import MiladRequests from './MiladRequests';
+import Donations     from './Donations';
+import Messages      from './Messages';
+import Contact       from './Contact';
+import Activities    from './Activities';
+import About         from './About';
 
 export default function AdminPanel() {
   const navigate = useNavigate();
