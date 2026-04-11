@@ -158,10 +158,16 @@ Contact page with form
 
 Messaging System in Contact
 
+Payment Gateway with sslcommerz
+
 Testing and bug fixes
 
 
 ⏳ Milestone 3: Finalization & Admin Panel (Upcoming)
+
+Activity Page 
+
+Mailing Freature 
 
 Admin Panel Design
 
@@ -171,14 +177,16 @@ Dashboard analytics implementation
 
 Performance optimization
 
+Docker
+
+CI/CD
+
 
 
 
 Final testing (Unit/Integration/E2E)
 
 Documentation completion
-
-Deployment to production
 
 
 ---
