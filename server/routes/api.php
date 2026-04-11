@@ -12,6 +12,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\AboutContentController;
 
 
 // ── Public Routes ─────────────────────────────────────────
@@ -41,6 +42,8 @@ Route::prefix('v1')->group(function () {
     // ✅ Contact: public — login ছাড়াই submit করা যাবে
     Route::post('/contact', [ContactController::class, 'submit']);
     Route::get('/activities', [ActivityController::class, 'index']);
+    Route::get('/about', [AboutContentController::class, 'show']);
+    Route::put('/about', [AboutContentController::class, 'update']);
 });
 
 // ── Payment Callback Routes ───────────────────────────────
@@ -120,6 +123,8 @@ Route::prefix('v1')->middleware('auth:api')->group(function () {
         Route::patch('/contact/{id}/read',  [ContactController::class, 'markRead']);
         Route::post('/contact/{id}/reply',  [ContactController::class, 'reply']);
         Route::delete('/contact/{id}',      [ContactController::class, 'destroy']);
+
+        Route::put('/about', [AboutContentController::class, 'update']);
 
  // ── Activities ──────────────────────────────────────
  Route::prefix('activities')->group(function () {
