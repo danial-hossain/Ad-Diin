@@ -8,6 +8,10 @@ class CreateAiConversationsTable extends Migration
 {
     public function up()
     {
+        if (Schema::hasTable('diin_ai_conversations')) {
+            return;
+        }
+
         Schema::create('diin_ai_conversations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

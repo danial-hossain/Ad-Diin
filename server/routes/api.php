@@ -112,8 +112,6 @@ Route::prefix('v1')->group(function () {
     // --------------------------------------------------------
 
     Route::get('/about', [AboutContentController::class, 'show']);
-
-    Route::put('/about', [AboutContentController::class, 'update']);
 });
 
 
